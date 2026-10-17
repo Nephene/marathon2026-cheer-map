@@ -326,7 +326,7 @@ function buildSteps(){
     else legs.push(it.type+':'+it.id);
   });
   STEPS.forEach(function(st){var info=SPOTINFO[st.spot];
-    info.badge=(info.key||st.spot==='km32')?'★':(st.spot==='start'||st.spot==='finish')?'🏁':String(st.n);
+    info.badge=(info.key||st.spot==='km32')?'★':st.spot==='finish'?'🏁':String(st.n);
     info.label=(info.key||st.spot==='km32')?'★':st.spot==='finish'?'🏁':String(st.n);});
 }
 buildSteps();
@@ -349,6 +349,8 @@ street.createPane('legs').style.zIndex=410;
 street.createPane('legsOn').style.zIndex=420;
 street.createPane('kmPane').style.zIndex=430;
 street.createPane('arrows').style.zIndex=408;
+street.createPane('spotPane').style.zIndex=670;
+street.createPane('spotTip').style.zIndex=680;
 var coursePts=null,arrowLayer=L.layerGroup().addTo(street);
 /* direction-of-travel chevrons along the course: spacing in screen px, recomputed per zoom; skip near each other (out-and-back stretches) */
 function drawArrows(){
@@ -376,7 +378,7 @@ function drawArrows(){
 }
 street.on('zoomend',drawArrows);
 
-var LEGS={},spotMarkers={},stationMarkers={},dataOk=false;
+var closedMarker=null,LEGS={},spotMarkers={},stationMarkers={},dataOk=false;
 
 function legStyle(kind,pane){
   return kind==='metro'
@@ -424,7 +426,6 @@ function drawCourse(d){
   L.polyline(c,{pane:'course',color:'#fff',weight:9,opacity:.9,lineJoin:'round'}).addTo(street);
   L.polyline(c,{pane:'course',color:C.course,weight:5,opacity:.9,lineJoin:'round'}).addTo(street);
   coursePts=c;drawArrows();
-  if(spotMarkers.finish)spotMarkers.finish.bindTooltip('Start & Finish',{permanent:true,direction:'bottom',className:'stl sf',offset:[0,22]});
   (d.km_markers||[]).forEach(function(k){
     L.marker([k.lat,k.lon],{pane:'kmPane',interactive:false,icon:L.divIcon({className:'',html:'<div class="kmm">'+esc(k.km)+'</div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(street);
   });
@@ -449,7 +450,7 @@ function drawStations(){
   var c=L.marker(CLOSED.ll,{icon:L.divIcon({className:'',html:'<div class="stn"><div class="mbadge x">✕</div></div>',iconSize:[24,22],iconAnchor:[12,11]}),zIndexOffset:400,title:CLOSED.name+' (closed)'});
   c.bindTooltip(esc(CLOSED.name)+' · closed 13–18 h',{permanent:true,direction:'bottom',className:'stl closed',offset:[0,13]});
   c.bindPopup('<h3>'+esc(CLOSED.name)+'</h3><div class="warn">Metro station closed Sunday 13:00–18:00.</div><div class="sec" style="margin-top:4px">Use Zuid instead and walk ~23 min to the Olympic Stadium.</div>');
-  c.addTo(street);
+  c.addTo(street);closedMarker=c;
 }
 
 function stepForSpot(id){for(var i=0;i<STEPS.length;i++)if(STEPS[i].spot===id)return STEPS[i].n;return 1;}
@@ -459,25 +460,24 @@ function spotHtml(id,on){
   return '<div class="spotwrap'+(id==='km32'&&!reduceMotion?' pulse':'')+'"><div class="'+cls+'">'+esc(s.badge)+'</div></div>';
 }
 function spotSize(id){return id==='km32'?50:38;}
-function markerIdFor(spot){return spot==='start'?'finish':spot;}
+var SPOT_OFF={start:[-22,-22],finish:[22,22]}; // px offsets so Start (1) and Finish sit side by side at the stadium
+function spotAnchor(id){var sz=spotSize(id),o=SPOT_OFF[id]||[0,0];return [sz/2-o[0],sz/2-o[1]];}
+function spotIcon(id,on){var sz=spotSize(id);return L.divIcon({className:'',html:spotHtml(id,on),iconSize:[sz,sz],iconAnchor:spotAnchor(id)});}
+function markerIdFor(spot){return spot;}
 function drawSpots(){
   Object.keys(SPOTINFO).forEach(function(id){
-    if(id==='start')return; // start & finish share the stadium marker
-    var sz=spotSize(id);
-    var m=L.marker(SPOTS[id],{icon:L.divIcon({className:'',html:spotHtml(id,false),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),zIndexOffset:id==='km32'?1200:1000,title:SPOTINFO[id].km+' · '+SPOTINFO[id].title});
-    m.on('click',function(){
-      if(id==='finish'){var cur=STEPS[state.step-1].spot;setStep(stepForSpot(cur==='finish'?'start':'finish'));}
-      else setStep(stepForSpot(id));
-    });
+    var m=L.marker(SPOTS[id],{pane:'spotPane',icon:spotIcon(id,false),zIndexOffset:id==='km32'?1200:1000,title:SPOTINFO[id].km+' · '+SPOTINFO[id].title});
+    m.on('click',function(){setStep(stepForSpot(id));});
+    if(id==='start')m.bindTooltip('1 · Start',{pane:'spotTip',permanent:true,direction:'left',className:'stl',offset:[-41,-22]});
+    if(id==='finish')m.bindTooltip('Finish',{pane:'spotTip',permanent:true,direction:'right',className:'stl sf',offset:[41,22]});
     m.addTo(street);spotMarkers[id]=m;
   });
 }
 function refreshSpots(active){
   active=markerIdFor(active);
   Object.keys(spotMarkers).forEach(function(id){
-    var sz=spotSize(id);
-    spotMarkers[id].setIcon(L.divIcon({className:'',html:spotHtml(id,id===active),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}));
-    spotMarkers[id].setZIndexOffset(id===active?1500:id==='km32'?1200:1000);
+    spotMarkers[id].setIcon(spotIcon(id,id===active));
+    spotMarkers[id].setZIndexOffset(id===active?5000:id==='km32'?1200:1000);
   });
 }
 
@@ -561,6 +561,7 @@ function updateMap(fit,instant){
   var s=STEPS[state.step-1];
   var b=setLegStyles(s.legs);
   refreshSpots(s.spot);
+  refreshLabels();
   b.push(SPOTS[s.spot]);
   if(fit&&view==='street'){
     var bb=L.latLngBounds(b),token=++fitToken;
@@ -568,6 +569,44 @@ function updateMap(fit,instant){
     if(street._animatingZoom)street.once('zoomend',doFit);else doFit();
   }
 }
+/* declutter: label visibility by zoom + relevance, leg pills kept clear of markers */
+function refreshLabels(){
+  var s=STEPS[state.step-1],low=street.getZoom()<13.5,used={};
+  s.legs.forEach(function(id){var lg=LEGS[id];if(!lg)return;var d=lg.data;[d.from,d.to].concat(d.via||[]).forEach(function(n){used[n]=1;});});
+  Object.keys(stationMarkers).forEach(function(n){var t=stationMarkers[n].getTooltip();if(t)t.setOpacity(!low||used[n]?1:0);});
+  if(closedMarker){var ct=closedMarker.getTooltip();if(ct)ct.setOpacity(!low||s.spot==='finish'?1:0);}
+  Object.keys(spotMarkers).forEach(function(id){var t=spotMarkers[id].getTooltip();if(t)t.setOpacity(!low||id===s.spot?1:0);});
+  var ft=spotMarkers.finish&&spotMarkers.finish.getTooltip();
+  if(ft){ft.options.direction=low?'top':'right';ft.options.offset=low?L.point(22,-3):L.point(41,22);ft.update();}
+  placeLegTips(s);
+}
+function rectGap(a,b){var dx=Math.max(a.l-b.r,b.l-a.r),dy=Math.max(a.t-b.b,b.t-a.b);return Math.max(dx,dy);}
+function boxAt(p,w,h){return {l:p.x-w/2,r:p.x+w/2,t:p.y-h/2,b:p.y+h/2};}
+function placeLegTips(s){
+  var boxes=[];
+  Object.keys(spotMarkers).forEach(function(id){var o=SPOT_OFF[id]||[0,0],p=street.latLngToLayerPoint(spotMarkers[id].getLatLng()),z=spotSize(id)+8;boxes.push(boxAt(L.point(p.x+o[0],p.y+o[1]),z,z));});
+  Object.keys(stationMarkers).forEach(function(n){var w=STINFO[n]&&STINFO[n].train?66:34;boxes.push(boxAt(street.latLngToLayerPoint(stationMarkers[n].getLatLng()),w,30));});
+  s.legs.forEach(function(id){
+    var lg=LEGS[id];if(!lg)return;
+    var ll=lg.ll,best=null,bd=-1e9;
+    [.5,.4,.6,.3,.7,.2,.8,.1,.9].some(function(f){
+      var ptl=ll[Math.min(ll.length-1,Math.floor((ll.length-1)*f))],pb=boxAt(street.latLngToLayerPoint(ptl),108,24),g=1e9;
+      boxes.forEach(function(q){g=Math.min(g,rectGap(pb,q));});
+      if(g>bd){bd=g;best=ptl;}
+      return g>=6;
+    });
+    if(best)lg.tip.setLatLng(best);
+  });
+  /* hide station / closed pills that would sit on top of a spot marker or spot label */
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    var blk=[];
+    Object.keys(spotMarkers).forEach(function(id){var m=spotMarkers[id],t=m.getTooltip();if(m._icon)blk.push(m._icon.getBoundingClientRect());if(t&&t.getElement()&&t.options.opacity!==0&&t.getElement().style.opacity!=='0')blk.push(t.getElement().getBoundingClientRect());});
+    var cand=Object.keys(stationMarkers).map(function(n){return stationMarkers[n];});if(closedMarker)cand.push(closedMarker);
+    cand.forEach(function(m){var t=m.getTooltip(),e=t&&t.getElement();if(!e||e.style.opacity==='0')return;var r=e.getBoundingClientRect();
+      if(blk.some(function(q){return r.left<q.right&&r.right>q.left&&r.top<q.bottom&&r.bottom>q.top;}))t.setOpacity(0);});
+  });});
+}
+street.on('zoomend',function(){if(STEPS.length)refreshLabels();});
 function setStep(n,instant){
   state.step=Math.max(1,Math.min(STEPS.length,n));
   renderStepper();renderCard();updateMap(true,instant);save();
@@ -620,6 +659,7 @@ function coursePopup(id){
   var s=SPOTINFO[id];
   return '<h3>'+esc(s.km+' · '+s.title)+'</h3><div class="sec">'+esc(s.sub)+'</div>'+
     '<a class="pbtn" href="#" data-goto="'+esc(id)+'">Show on street map</a>'+
+    (id==='finish'?'<a class="pbtn alt" href="#" data-goto="start">Show Start (stop 1) instead</a>':'')+
     '<a class="pbtn alt" target="_blank" rel="noopener" href="'+gmDir(SPOTS[id],'transit')+'">Navigate in Google Maps</a>';
 }
 function initCourse(){
@@ -639,8 +679,7 @@ function initCourse(){
       c.bindPopup(function(){return coursePopup(id);},{maxWidth:280});
     });
     course.on('popupopen',function(e){
-      var a=e.popup.getElement().querySelector('[data-goto]');
-      if(a)a.addEventListener('click',function(ev){ev.preventDefault();var id=a.getAttribute('data-goto');setView('street');setStep(stepForSpot(id));});
+      e.popup.getElement().querySelectorAll('[data-goto]').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();var id=a.getAttribute('data-goto');setView('street');setStep(stepForSpot(id));});});
     });
     setTimeout(function(){course.invalidateSize();course.fitBounds(b);},50);
   };
