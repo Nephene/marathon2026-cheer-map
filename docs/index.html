@@ -219,8 +219,8 @@ var STINFO={
 var CLOSED={name:'Amstelveenseweg',ll:[52.3378,4.8573]};
 var NAMES={start:'Stadium',Zuid:'Zuid',RAI:'RAI',Amstel:'Amstel',Weesperplein:'Weesperplein',km6:'km 6',km13:'km 13',km32:'km 32',km37:'km 37',finish:'Finish'};
 var SPOTINFO={
-  start:{km:'Start',title:'Olympic Stadium',sub:'km 0 · Watch the start — my wave (6) starts at about 09:43',
-       tips:['Get here early: Metro 51 to Zuid + 23-min walk, or Amstelveenseweg metro (open in the morning — closed only 13:00–18:00).','After the start, walk 1.7 km (21 min) to Beethovenstraat for km 6.']},
+  start:{km:'Start',title:'Olympic Stadium',sub:'Watch me start (wave 6, ~09:43)',
+       tips:['Then walk straight to stop 2 — Beethovenstraat (1.7 km · 21 min)']},
   km6:{km:'km 6',title:'Beethovenstraat',sub:'Just south of Stadionweg · 21 min from the stadium',pdf:[526,936],
        tips:['Stand on the WEST side of Beethovenstraat so you can walk back to Zuid without crossing the course.','After I pass: walk to Zuid (14 min) for Metro 51 to RAI.']},
   km13:{km:'km 13',title:'President Kennedylaan',sub:'Martin Luther Kingpark side · 13 min from RAI',pdf:[953,1136],
@@ -429,11 +429,9 @@ function renderCard(){
     h+='<ol class="legs">'+refs.map(legRow).join('')+'</ol>';
     if(t.ok)h+='<div class="total"><span>🚶 '+esc(fmtKm(t.km))+' on foot'+(t.hasMetro?' + metro':'')+'</span><b>Total ≈ '+esc(t.min)+' min'+(t.hasMetro?' + waiting':'')+'</b></div>';
     else if(!dataOk)h+='<div class="total"><span>Distances unavailable offline — use Google Maps.</span></div>';
-  }else{
-    h+='<ol class="legs"><li class="leg"><span class="ic metro">M</span><div><div class="l1">Metro 51 → Zuid, then walk</div><div class="l2">1.9 km · <b>23 min</b> to the stadium</div></div></li></ol>';
   }
-  h+='<a class="btn" target="_blank" rel="noopener" href="'+gmDir(SPOTS[s.spot],(t.hasMetro||!refs.length)?'transit':'walking')+'">🧭 Navigate in Google Maps</a>';
-  if(state.step<STEPS.length){var nx=SPOTINFO[STEPS[state.step].spot];h+='<div class="nextrow"><button class="btn alt" data-go="'+(state.step+1)+'">Next: '+esc(nx.badge+' '+nx.km+' · '+nx.title)+' ›</button></div>';}
+  if(refs.length)h+='<a class="btn" target="_blank" rel="noopener" href="'+gmDir(SPOTS[s.spot],t.hasMetro?'transit':'walking')+'">🧭 Navigate in Google Maps</a>';
+  if(state.step<STEPS.length){var nx=SPOTINFO[STEPS[state.step].spot];h+='<div class="nextrow"><button class="btn'+(refs.length?' alt':'')+'" data-go="'+(state.step+1)+'">Next: '+esc(nx.badge+' '+nx.km+' · '+nx.title)+' ›</button></div>';}
   var th='';
   (info.tips||[]).forEach(function(tp){var txt=typeof tp==='string'?tp:tp.t,cls=typeof tp==='string'?'':tp.cls;if(txt)th+='<li class="'+esc(cls||'')+'">'+esc(txt)+'</li>';});
   if(th)h+='<ul class="tips">'+th+'</ul>';
@@ -446,7 +444,6 @@ function updateMap(fit,instant){
   var b=setLegStyles(s.legs);
   refreshSpots(s.spot);
   b.push(SPOTS[s.spot]);
-  if(!s.legs.length)b.push(STATIONS.Zuid);
   if(fit&&view==='street'){
     var bb=L.latLngBounds(b),token=++fitToken;
     var doFit=function(){if(token!==fitToken)return;street.invalidateSize();street.fitBounds(bb,{paddingTopLeft:[44,desktopMq.matches?40:72],paddingBottomRight:[44,desktopMq.matches?50:62],maxZoom:16,animate:!instant});};
