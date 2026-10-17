@@ -3,195 +3,197 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>Cheer Map</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23FFD400' stroke='%23000' stroke-width='8'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle'%3E%F0%9F%93%A3%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
 :root{
-  --accent:#FFD400; --ink:#111; --bg:#fff; --panel:#fff; --muted:#555; --line:#e2e2e2; --chip:#f3f3f3;
-  --warn-bg:#FFF3B0; --warn-ink:#111; --metro:#0066CC; --ns:#003082; --nsy:#FFC917; --link:#0b57d0;
+  --accent:#FFD400; --ink:#111; --bg:#fff; --panel:#fff; --muted:#5c5c5c; --line:#e3e3e3; --chip:#f2f2f2;
+  --warn-bg:#FFF3B0; --warn-ink:#111; --metro:#0066CC; --walk:#7B2CBF; --course:#E10600; --ns:#003082; --nsy:#FFC917; --link:#0b57d0;
+  --sheet-h:48dvh;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --ink:#f4f4f4; --bg:#121212; --panel:#1c1c1e; --muted:#aaa; --line:#333; --chip:#2a2a2d; --link:#8ab4f8; }
+  :root{ --ink:#f4f4f4; --bg:#121212; --panel:#1b1b1d; --muted:#b0b0b0; --line:#38383a; --chip:#2a2a2d; --link:#8ab4f8; --walk:#b07ce6; --metro:#4d94e6; }
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,a{-webkit-tap-highlight-color:transparent}
 #app{position:fixed;inset:0;display:flex;flex-direction:column}
-#top{flex:none;background:var(--accent);color:#111;padding:calc(env(safe-area-inset-top) + 6px) 10px 6px;display:flex;gap:8px;align-items:center;z-index:1100}
-#top h1{font-size:16px;margin:0;white-space:nowrap}
-.tabs{display:flex;flex:1;gap:6px;justify-content:flex-end}
-.tab{flex:1;max-width:170px;min-height:44px;border:2px solid #111;background:#fff;color:#111;border-radius:10px;font:700 14px inherit;font-family:inherit;cursor:pointer}
+#top{flex:none;background:var(--accent);color:#111;padding:calc(env(safe-area-inset-top) + 5px) 10px 5px;display:flex;gap:8px;align-items:center;z-index:1100}
+#top h1{flex:1;min-width:0;font-size:15px;margin:0;white-space:nowrap;line-height:1.15;overflow:hidden;text-overflow:ellipsis}
+#top h1 small{display:block;font-size:11px;font-weight:600;opacity:.75}
+.tabs{display:flex;flex:none;gap:6px;justify-content:flex-end;margin-left:auto}
+.tab{min-height:40px;border:2px solid #111;background:#fff;color:#111;border-radius:10px;font:700 13px inherit;font-family:inherit;cursor:pointer;padding:0 9px;white-space:nowrap}
 .tab[aria-selected=true]{background:#111;color:var(--accent)}
+#wrap{flex:1;display:flex;flex-direction:column;min-height:0}
 #main{flex:1;position:relative;min-height:0}
 .mapbox{position:absolute;inset:0}
 .mapbox.hidden{visibility:hidden;pointer-events:none}
-#street,#course{width:100%;height:100%}
+#street,#course{width:100%;height:100%;background:#e8e4dc}
 #course{background:#ddd}
-#notice{position:absolute;left:8px;top:8px;right:60px;z-index:1000;background:var(--warn-bg);color:var(--warn-ink);border:2px solid #111;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;pointer-events:none}
-#locbtn{position:absolute;right:10px;top:10px;z-index:1000;min-width:48px;min-height:48px;border-radius:50%;border:2px solid #111;background:#fff;font-size:22px;cursor:pointer}
-#maphint{position:absolute;left:8px;bottom:calc(var(--sheet-peek,110px) + 8px);z-index:900;background:rgba(255,255,255,.92);color:#111;border-radius:8px;padding:3px 8px;font-size:12px;max-width:70%}
+#notice{position:absolute;left:8px;top:8px;right:62px;z-index:1000;background:var(--warn-bg);color:var(--warn-ink);border:1.5px solid #111;border-radius:9px;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.3;pointer-events:none}
+#locbtn{position:absolute;right:10px;top:8px;z-index:1000;width:46px;height:46px;border-radius:50%;border:2px solid #111;background:#fff;font-size:21px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+#legend{position:absolute;left:8px;bottom:8px;z-index:900;background:rgba(255,255,255,.95);color:#111;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;display:flex;gap:9px;flex-wrap:wrap;align-items:center;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.25);max-width:calc(100% - 110px)}
+#legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+#legend i{display:inline-block;width:18px;height:0;border-top:4px solid #E10600;border-radius:2px}
+#legend i.m{border-top-color:#0066CC}
+#legend i.w{border-top:3px dotted #7B2CBF}
+#legend b.sp{width:16px;height:16px;border-radius:50%;background:#FFD400;border:2px solid #000;font:900 9px/12px Arial,sans-serif;text-align:center;color:#000}
+#legend b.mb{width:16px;height:16px;border-radius:3px;background:#0066CC;color:#fff;font:900 10px/16px Arial,sans-serif;text-align:center}
+#legend b.tb{height:16px;padding:0 3px;border-radius:3px;background:#003082;color:#FFC917;font:900 9px/16px Arial,sans-serif}
+#datanote{position:absolute;left:50%;transform:translateX(-50%);bottom:40px;z-index:950;background:#fff0f0;color:#b00000;border:1.5px solid #c00;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;max-width:90%;text-align:center}
+#datanote[hidden]{display:none}
 #toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:10px;z-index:3000;font-size:14px;display:none;max-width:90vw}
 #err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:17px;background:var(--bg);z-index:1000}
+.leaflet-control-zoom{display:none}
+.leaflet-container{font-family:inherit}
+.leaflet-control-attribution{font-size:9px!important;opacity:.85}
 
-/* panel: bottom sheet on mobile */
-#panel{position:fixed;left:0;right:0;bottom:0;z-index:1200;background:var(--panel);color:var(--ink);
-  border-radius:18px 18px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.3);display:flex;flex-direction:column;
-  height:78vh;height:78dvh;transform:translateY(calc(100% - var(--sheet-peek,110px)));transition:transform .25s ease}
-#panel.open{transform:none}
-#handle{flex:none;border:0;background:none;color:inherit;width:100%;padding:8px 14px 6px;text-align:left;cursor:pointer;font-family:inherit;min-height:var(--sheet-peek,110px)}
-#handle::before{content:"";display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
-#handle .t{font-weight:800;font-size:17px;display:block}
-#handle .s{font-size:13px;color:var(--muted);display:block}
-.banner{margin-top:6px;background:var(--warn-bg);color:var(--warn-ink);border:2px solid #111;border-radius:10px;padding:7px 10px;font-weight:800;font-size:14px;display:block}
-#sheetbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px calc(env(safe-area-inset-bottom) + 24px)}
-.card{border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
-.card label{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.row>div{flex:1;min-width:104px}
-input[type=text],input[type=time]{width:100%;min-height:46px;font-size:18px;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-family:inherit}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:8px 14px;border-radius:10px;border:2px solid #111;background:var(--accent);color:#111;font:700 15px inherit;font-family:inherit;cursor:pointer;text-decoration:none}
-.btn.block{display:flex;width:100%;margin-top:8px}
-.btn.alt{background:var(--chip);color:var(--ink);border-color:var(--line)}
-.err{color:#c00;font-size:13px;min-height:1em}
-ol.steps{list-style:none;margin:0;padding:0}
-ol.steps>li{border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:10px 10px 10px 54px;position:relative;cursor:pointer;min-height:52px}
-ol.steps>li:active{background:var(--chip)}
-ol.steps>li .n{position:absolute;left:10px;top:10px;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#111;border:3px solid #111;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:15px}
-li.star{border:2px solid #111;background:rgba(255,212,0,.18)}
-li.star .n{width:38px;height:38px;font-size:18px}
-.eta{display:inline-block;background:#111;color:var(--accent);border-radius:8px;padding:1px 8px;font-weight:800;font-size:13px;margin-left:4px;white-space:nowrap}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.chip{min-height:44px;padding:4px 10px;border-radius:10px;border:2px solid #111;background:var(--accent);color:#111;font:700 13px inherit;font-family:inherit;cursor:pointer}
-.opt{margin:6px 0;padding:6px 8px;border-left:4px solid var(--accent);background:var(--chip);border-radius:6px;font-size:14px}
-.small{font-size:13px;color:var(--muted)}
-.foot{font-size:14px;margin-top:12px}
+/* ---------- bottom sheet ---------- */
+#sheet{flex:none;height:var(--sheet-h);background:var(--panel);color:var(--ink);border-radius:18px 18px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.25);display:flex;flex-direction:column;z-index:1200;position:relative}
+body.closed #sheet{height:auto}
+body.closed #grab,body.closed #stepper,body.closed #sheetbody{display:none}
+#bar{display:none;flex:none;width:100%;min-height:56px;border:0;background:var(--panel);color:var(--ink);font:800 16px inherit;font-family:inherit;cursor:pointer;padding:6px 14px calc(env(safe-area-inset-bottom) + 6px);text-align:left;align-items:center;gap:10px;border-radius:18px 18px 0 0;touch-action:none}
+body.closed #bar{display:flex}
+#bar .chev{flex:none;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#111;display:flex;align-items:center;justify-content:center;border:2px solid #111}
+#bar .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .t small{display:block;font-size:12px;font-weight:700;color:var(--muted)}
+#grab{flex:none;border:0;background:none;width:100%;height:24px;padding:0;cursor:pointer;font-family:inherit;touch-action:none}
+#grab::before{content:"";display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:9px auto 0}
+.head{display:flex;gap:8px;align-items:flex-start}
+.head>div{flex:1;min-width:0}
+.close{flex:none;width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:-2px}
+.close svg{width:22px;height:22px}
+#openpanel{display:none;position:absolute;left:10px;top:60px;z-index:1000;min-height:44px;padding:0 14px 0 10px;border-radius:12px;border:2px solid #111;background:var(--accent);color:#111;font:800 14px inherit;font-family:inherit;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);align-items:center;gap:6px}
+#openpanel svg{width:20px;height:20px}
+#stepper{flex:none;display:flex;gap:5px;align-items:center;padding:2px 10px 8px}
+#stepper button{flex:1;min-width:0;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--ink);font:800 16px inherit;font-family:inherit;cursor:pointer;padding:0}
+#stepper button.arrow{flex:0 0 38px;font-size:24px;font-weight:700}
+#stepper button.arrow:disabled{opacity:.3;cursor:default}
+#stepper button[aria-current=step]{background:var(--accent);color:#111;border-color:#111;box-shadow:inset 0 0 0 1px #111}
+#stepper button.star{font-size:20px}
+#sheetbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px calc(env(safe-area-inset-bottom) + 20px);overscroll-behavior:contain}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.3px;color:var(--muted);text-transform:uppercase}
+.eyebrow .imp{color:#b00000}
+h2.title{margin:0 0 2px;font-size:23px;line-height:1.15;font-weight:900}
+.sub{font-size:13px;color:var(--muted);margin:0 0 6px;line-height:1.3}
+.how{font-size:12px;font-weight:800;letter-spacing:.3px;color:var(--muted);text-transform:uppercase;margin:4px 0 2px}
+ol.legs{list-style:none;margin:0;padding:0;position:relative}
+ol.legs>li{display:flex;gap:10px;align-items:flex-start;padding:4px 0;position:relative}
+ol.legs>li+li::before{content:"";position:absolute;left:15px;top:-8px;height:12px;border-left:3px dotted var(--line)}
+.ic{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--chip)}
+.ic.walk{background:rgba(123,44,191,.15)}
+.ic.metro{background:var(--metro);color:#fff;font:900 16px/1 Arial,sans-serif;border-radius:7px}
+.leg .l1{font-weight:800;font-size:15px;line-height:1.25}
+.leg .l2{font-size:13px;color:var(--muted);line-height:1.3}
+.leg .l2 b{color:var(--ink)}
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-size:13px;color:var(--muted)}
+.total b{font-size:15px;color:var(--ink)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;padding:8px 14px;border-radius:12px;border:2px solid #111;background:var(--accent);color:#111;font:800 16px inherit;font-family:inherit;cursor:pointer;text-decoration:none;margin-top:10px}
+.btn:active{filter:brightness(.92)}
+.btn.alt{background:var(--chip);color:var(--ink);border-color:var(--line);font-weight:700;font-size:14px;min-height:44px}
+.nextrow{display:flex;gap:8px;margin-top:8px}
+.nextrow .btn{margin-top:0;flex:1}
+.tips{margin:12px 0 0;padding:0;list-style:none;font-size:14px}
+.tips li{padding:6px 10px;margin:6px 0;border-left:4px solid var(--accent);background:var(--chip);border-radius:6px}
+.tips li.imp{border-left-color:#b00000;font-weight:700}
+.tips li.red{color:#b00000;font-weight:700;border-left-color:#b00000}
+.foot{font-size:13px;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.foot p{margin:6px 0}
 .foot a{color:var(--link);font-weight:700}
-.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;align-items:center;margin:8px 0}
+.foot .row{display:flex;gap:8px;margin-top:8px}
+.foot .row a{flex:1;margin-top:0}
+.notice{background:var(--warn-bg);color:var(--warn-ink);border:1.5px solid #111;border-radius:9px;padding:6px 10px;font-weight:700;font-size:13px}
 
-.by{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:0 7px;font-weight:700;font-size:12px;white-space:nowrap}
-.tag{display:inline-block;background:#1a8f3c;color:#fff;border-radius:6px;padding:0 6px;font-weight:900;font-size:11px;letter-spacing:.5px;vertical-align:middle}
-.tag.warn{background:#b26a00}
-ol.steps>li.brk{border:1px dashed var(--line);padding:8px 12px;cursor:default;min-height:0;font-size:14px;color:var(--muted)}
-.closedwarn{color:#c00;font-weight:800}
-
-/* map icons */
-.spot{width:100%;height:100%;border-radius:50%;background:#FFD400;border:4px solid #000;color:#000;font:900 16px/1 -apple-system,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5)}
-.spot.big{font-size:22px;border-width:5px;position:relative;overflow:visible}
-.spot.big::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:4px solid #FFD400;animation:pulse 1.6s ease-out infinite}
-@keyframes pulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.8);opacity:0}}
-.spot.fin{border-radius:12px}
-.spot.best{position:relative;overflow:visible}
-.besttag{position:absolute;top:-12px;right:-20px;background:#1a8f3c;color:#fff;border:2px solid #fff;border-radius:6px;font:900 10px/1 Arial,sans-serif;padding:2px 4px;letter-spacing:.5px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.mbadge.x{background:#777;border-color:#c00;color:#ddd;text-decoration:line-through}
-.leaflet-tooltip.stl.closed{background:#fff0f0;color:#b00000;border-color:#c00}
+/* ---------- map icons ---------- */
+.spot{width:100%;height:100%;border-radius:50%;background:#FFD400;border:3px solid #000;color:#000;font:900 17px/1 -apple-system,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.spot.big{font-size:24px;border-width:4px}
+.spot.fin{border-radius:11px;font-size:20px}
+.spot.on{box-shadow:0 0 0 3px #fff,0 0 0 6px #E10600,0 2px 8px rgba(0,0,0,.5)}
+.spotwrap{position:relative;width:100%;height:100%}
+.spotwrap.pulse::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:4px solid #FFD400;animation:pulse 1.6s ease-out infinite;pointer-events:none}
+@keyframes pulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.9);opacity:0}}
+.stn{display:flex;gap:2px;align-items:center;justify-content:center}
+.mbadge{width:26px;height:26px;background:#0066CC;color:#fff;border:2px solid #fff;font:900 15px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 1px 5px rgba(0,0,0,.6)}
+.mbadge.x{width:22px;height:22px;font-size:13px;background:#8a8a8a;border-color:#c00;color:#fff}
+.tbadge{height:26px;padding:0 5px;background:#003082;color:#FFC917;border:2px solid #fff;font:900 12px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 1px 5px rgba(0,0,0,.6);letter-spacing:.5px}
+.kmm{width:100%;height:100%;border-radius:50%;background:#fff;border:2px solid #E10600;color:#E10600;font:900 10px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.leaflet-tooltip.stl{background:#fff;color:#111;border:2px solid #003082;border-radius:6px;font:800 12px/1.2 -apple-system,Helvetica,Arial,sans-serif;padding:2px 6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.leaflet-tooltip.stl small{font-weight:600;color:#003082;display:block;font-size:10px}
+.leaflet-tooltip.stl.closed{background:#fff0f0;color:#b00000;border-color:#c00;font-size:10px;padding:1px 5px}
 .leaflet-tooltip.stl.closed s{color:#777}
-.stn{display:flex;gap:2px;align-items:center}
-.mbadge{width:28px;height:28px;background:#0066CC;color:#fff;border:2px solid #fff;font:900 16px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:4px;box-shadow:0 1px 5px rgba(0,0,0,.6)}
-.tbadge{height:28px;padding:0 6px;background:#003082;color:#FFC917;border:2px solid #fff;font:900 13px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 1px 5px rgba(0,0,0,.6);letter-spacing:.5px}
-.leaflet-tooltip.stl{background:#fff;color:#111;border:2px solid #003082;border-radius:6px;font:700 12px/1.25 -apple-system,Helvetica,Arial,sans-serif;padding:2px 6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.leaflet-tooltip.stl small{font-weight:600;color:#003082;display:block}
-.leaflet-tooltip.lbl{background:#7B2CBF;color:#fff;border:0;font:700 11px/1.2 Arial,sans-serif;padding:1px 5px;border-radius:4px;box-shadow:none}
-.leaflet-tooltip.lbl::before{display:none}
+.leaflet-tooltip.pill{border:0;border-radius:999px;font:800 12px/1.2 -apple-system,Helvetica,Arial,sans-serif;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.leaflet-tooltip.pill.metro{background:#0066CC;color:#fff}
+.leaflet-tooltip.pill.walk{background:#7B2CBF;color:#fff}
+.leaflet-tooltip.pill::before,.leaflet-tooltip.stl::before{display:none}
 .leaflet-popup-content{font:14px/1.4 -apple-system,Helvetica,Arial,sans-serif;color:#111;margin:12px 14px}
 .leaflet-popup-content h3{margin:0 0 4px;font-size:16px}
 .pbtn{display:block;text-align:center;margin-top:8px;padding:10px;background:#FFD400;color:#111!important;border:2px solid #000;border-radius:8px;font-weight:800;text-decoration:none}
+.pbtn.alt{background:#f2f2f2;border-color:#bbb}
 .hot{cursor:pointer}
 
+/* ---------- desktop: side panel ---------- */
 @media (min-width:900px){
-  :root{--sheet-peek:0px}
-  #app{flex-direction:column}
-  #main{margin-right:420px}
-  #panel{position:fixed;top:0;bottom:0;left:auto;right:0;width:420px;height:auto;border-radius:0;transform:none!important;box-shadow:-2px 0 12px rgba(0,0,0,.25);padding-top:56px}
-  #handle{min-height:0;cursor:default}
-  #handle::before{display:none}
-  #top{margin-right:420px}
-  #maphint{bottom:8px}
+  #wrap{flex-direction:row}
+  #main{order:2}
+  #sheet{order:1;width:400px;height:auto!important;border-radius:0;box-shadow:2px 0 12px rgba(0,0,0,.2)}
+  body.closed #sheet{display:none}
+  body.closed #openpanel{display:flex}
+  #grab,#bar{display:none!important}
+  .close svg{transform:rotate(90deg)}
+  #stepper{padding-top:12px}
+  #sheetbody{padding-bottom:24px}
+  .leaflet-control-zoom{display:block}
+  #notice{left:56px}
+  h2.title{font-size:26px}
+  #legend{font-size:12px}
+  #top h1{font-size:17px}
 }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="top">
-    <h1>📣 Cheer Map</h1>
+  <header id="top">
+    <h1>Cheer for me! 🏃<small>Sun 18 Oct · TCS Amsterdam Marathon</small></h1>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-street" aria-selected="true">🗺️ Street map</button>
+      <button class="tab" role="tab" id="tab-street" aria-selected="true">🗺️ Next stop</button>
       <button class="tab" role="tab" id="tab-course" aria-selected="false">🏃 Course map</button>
     </div>
-  </div>
-  <div id="main">
-    <div class="mapbox" id="box-street">
-      <div id="street"></div>
-      <div id="notice">🚇 Metro &amp; 🚆 train only — trams &amp; buses cancelled<br>⛔ Amstelveenseweg metro closed 13:00–18:00</div>
-      <button id="locbtn" aria-label="Where am I" title="Where am I">📍</button>
-      <div id="maphint">Red race route: see Course map tab. Spot positions approx.</div>
+  </header>
+  <div id="wrap">
+    <div id="main">
+      <div class="mapbox" id="box-street">
+        <div id="street"></div>
+        <div id="notice">🚇 Metro &amp; 🚆 train only — trams &amp; buses limited · ⛔ Amstelveenseweg metro closed 13:00–18:00</div>
+        <button id="locbtn" aria-label="Show my location" title="Show my location">📍</button>
+        <div id="legend" aria-hidden="true"><span><i></i>Course 42 km</span><span><i class="m"></i>Metro 51</span><span><i class="w"></i>Walk</span><span><b class="sp">1</b>Cheer spot</span><span><b class="mb">M</b><b class="tb">NS</b>Station</span></div>
+        <div id="datanote" hidden></div>
+        <button id="openpanel" aria-label="Show the plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Plan</button>
+      </div>
+      <div class="mapbox hidden" id="box-course">
+        <div id="course"></div>
+        <div id="err">Sorry, the course map image couldn't be loaded. Try the "Official PDF" link at the bottom of the plan, or check back in a moment.</div>
+      </div>
     </div>
-    <div class="mapbox hidden" id="box-course">
-      <div id="course"></div>
-      <div id="err">Sorry, the course map image couldn't be loaded. Try the "Download PDF" link in the plan, or check back in a moment.</div>
-    </div>
-  </div>
-  <section id="panel" aria-label="Plan">
-    <button id="handle" aria-expanded="false">
-      <span class="t">Cheer for me! 🏃 TCS Amsterdam Marathon · Sun 18 Oct 2026</span>
-      <span class="s" id="handlehint">Tap to open the plan &amp; ETAs</span>
-      <span class="banner">🚇 Metro &amp; 🚆 train only — trams &amp; buses are cancelled<br>⛔ Amstelveenseweg metro closed 13:00–18:00</span>
-    </button>
-    <div id="sheetbody">
-      <div class="card">
-        <div class="row">
-          <div><label for="start">My start time</label><input id="start" type="time" value="09:45"></div>
-          <div><label for="pace">Pace (min/km)</label><input id="pace" type="text" inputmode="numeric" autocomplete="off" value="8:00" placeholder="8:00"></div>
-          <div><label for="goal">Goal finish (h:mm[:ss])</label><input id="goal" type="text" inputmode="numeric" autocomplete="off" value="5:37:34" placeholder="5:37:34"></div>
+    <section id="sheet" aria-label="Next stop">
+      <button id="bar" aria-label="Show the plan" aria-expanded="false"><span class="chev" aria-hidden="true">▲</span><span class="t" id="bartext"></span></button>
+      <button id="grab" aria-label="Hide the plan"></button>
+      <div id="stepper" role="tablist" aria-label="Stops"></div>
+      <div id="sheetbody">
+        <div id="stepcard" aria-live="polite"></div>
+        <div class="foot">
+          <p><b>📱 Follow my live position in the TCS Amsterdam Marathon app.</b></p>
+          <p class="notice">🚇 Metro &amp; 🚆 train only — trams &amp; buses are limited on race day.<br>⛔ Amstelveenseweg metro closed 13:00–18:00 → reach the finish from Zuid on foot.</p>
+          <p>Half-marathon runners (start 13:20) share the road around km 32–37 — look carefully. Check the GVB / 9292 app on race day: metro frequency &amp; exits may change.</p>
+          <p><b>Most critical points for me: 30 km+ and the finish.</b> No rush, no matter what — we hug at the finish!</p>
+          <div class="row"><a class="btn alt" href="assets/support-map.pdf" download>📄 Official PDF</a><a class="btn alt" href="assets/support-map.jpg" target="_blank" rel="noopener">🖼️ Course map JPG</a></div>
+          <p>Sources: official course &amp; travel advice — <a href="https://www.tcsamsterdammarathon.eu/travel-advice-race-day" target="_blank" rel="noopener">tcsamsterdammarathon.eu</a>. Spot positions approx. (±50 m). Walking times at 4.8 km/h.</p>
         </div>
-        <div class="err" id="inputerr" role="alert"></div>
-        <div class="small">ETAs assume even pace, ≈ ±10 min. Add a few minutes of buffer! Pace and goal time update each other.</div>
-        <button class="btn block" id="copy">🔗 Copy link with my times</button>
       </div>
-
-      <div class="legend">
-        <span class="mbadge">M</span> Metro
-        <span class="tbadge">NS</span> Train
-        <span class="spot" style="width:24px;height:24px;font-size:12px;border-width:3px;display:inline-flex">1</span> Cheer spot
-      </div>
-
-      <ol class="steps">
-        <li data-spot="1"><span class="n">1</span>
-          <b>km 6 · Beethovenstraat</b> <span class="eta" data-km="6"></span> <span class="by" data-km="6" data-off="-13" data-pre="be there by "></span><br>
-          Zuid (metro/train) + 13 min walk. Stand on the <b>west side</b> of Beethovenstraat so you can walk back to Zuid without crossing the course. Then walk back to Zuid → Metro 50/51 or train, 1 stop → RAI.</li>
-        <li data-spot="2b"><span class="n">2</span>
-          <b>km 13 President Kennedylaan</b> <span class="tag">BEST</span> (recommended) <b>or km 14 Amsteldijk</b> <span class="by" data-km="13" data-off="-13" data-pre="be there by "></span><br>
-          14 min walk from RAI. km 12 only if you skipped km 6. Then back to RAI → Metro 51 to Amstel (~6 min).
-          <div class="chips">
-            <button class="chip" data-spot="2a">km 12 (only if early) <span class="eta" data-km="12"></span></button>
-            <button class="chip" data-spot="2b">km 13 ★ best <span class="eta" data-km="13"></span></button>
-            <button class="chip" data-spot="2c">km 14 Amsteldijk <span class="eta" data-km="14"></span></button>
-          </div></li>
-        <li class="brk">☕ Break ~<span data-km="14" data-off="10"></span>–<span data-km="32" data-off="-30"></span> — lunch near Amstel station</li>
-        <li class="star" data-spot="3"><span class="n">★</span>
-          <b>km 32 · Hugo de Vrieslaan</b> <span class="eta" data-km="32"></span> <span class="by" data-km="32" data-off="-15" data-pre="be there by "></span><br>
-          <b>Most critical point — I'll need the most mental support!</b> 16 min walk from Amstel. Be there ~15 min early. Half-marathon runners are on this road too, look carefully.</li>
-        <li data-spot="4"><span class="n">4</span>
-          <b>Choose</b>
-          <div class="opt"><b>A) km 37 Weesperplein</b> <span class="eta" data-km="37"></span> — Metro 51/53/54 Amstel → Weesperplein (2 stops), 3 min walk. Busy: half-marathon runners pass here too, look carefully! You'll then reach the stadium ~45 min after my km 37 time (≈ after I finish) → meet me at the Meeting Point. Arrive ≈ <b data-km="37" data-off="49"></b></div>
-          <div class="opt"><b>B) Straight to the finish</b> to see me cross the line: Metro 51 Amstel → Zuid (~9 min) + 23 min walk. Arrive ≈ <b data-km="32" data-off="58"></b></div></li>
-        <li data-spot="5"><span class="n">🏁</span>
-          <b>Finish · Olympic Stadium</b> <span class="eta" data-km="42.195"></span><br>
-          From Zuid ~23 min walk. <span class="closedwarn">⚠️ Amstelveenseweg metro closed 13:00–18:00.</span><br>
-          No rush, no matter what — we hug at the finish!</li>
-      </ol>
-
-      <div class="foot">
-        <b>Most critical points: 30 km+ and the 42 km finish.</b> Check the GVB / 9292 app on race day — metro frequency &amp; exits may change.
-        <div style="margin-top:6px">Half-marathon runners (start 13:20) share the road around km 32–37 — look carefully.</div>
-        <div class="row" style="margin-top:8px">
-          <div><a class="btn block alt" href="assets/support-map.pdf" download>📄 Download PDF</a></div>
-          <div><a class="btn block alt" href="assets/support-map.jpg" target="_blank" rel="noopener">🖼️ Course map JPG</a></div>
-        </div>
-        <div class="small" style="margin-top:10px">Sources: official course &amp; travel advice — <a href="https://www.tcsamsterdammarathon.eu/travel-advice-race-day" target="_blank" rel="noopener">tcsamsterdammarathon.eu</a></div>
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </div>
 <div id="toast" role="status"></div>
 
@@ -202,89 +204,171 @@ ol.steps>li.brk{border:1px dashed var(--line);padding:8px 12px;cursor:default;mi
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function toast(msg){var t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},3500);}
-function gmDir(lat,lon){return 'https://www.google.com/maps/dir/?api=1&destination='+lat+','+lon+'&travelmode=walking';}
+function gmDir(ll,mode){return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(ll[0]+','+ll[1])+'&travelmode='+(mode||'walking');}
+function fmtKm(k){return (Math.round(k*10)/10).toFixed(1)+' km';}
 
-/* ---------- data ---------- */
-var SPOTS = {
-  '1': {id:'1',label:'1',km:6,title:'km 6 · Beethovenstraat',sub:'just south of Stadionweg',lat:52.3461,lon:4.87655,near:'Zuid (Metro 50 · 51 · 52 + train)',walk:'~13 min walk from Zuid',note2:'Stand on the west side of Beethovenstraat so you can walk back to Zuid without crossing the course.',pdf:[526,936]},
-  '2a':{id:'2a',label:'2a',km:12,title:'km 12 · Rijnstraat',lat:52.3448,lon:4.90655,near:'RAI (Metro 50 · 51 + train)',walk:'~22 min walk from RAI',pick:true,warn:'Only if you\'re early — 22 min walk from RAI, too tight after km 6.',pdf:[1020.5,978]},
-  '2b':{id:'2b',label:'2b',km:13,title:'km 13 · President Kennedylaan / Martin Luther Kingpark',lat:52.33897,lon:4.90293,near:'Europaplein (Metro 52) or RAI (Metro 50 · 51)',walk:'~12 min from Europaplein or ~14 min from RAI',pick:true,best:true,pdf:[953,1136]},
-  '2c':{id:'2c',label:'2c',km:14,title:'km 14 · Amsteldijk (by Zorgvlied)',lat:52.33383,lon:4.90249,near:'RAI (Metro 50 · 51 + train)',walk:'~14 min walk from RAI',pick:true,pdf:[939,1276]},
-  '3': {id:'3',label:'★',km:32,title:'★ km 32 · Hugo de Vrieslaan / Gooiseweg',lat:52.34729,lon:4.93178,near:'Amstel (Metro 51 · 53 · 54 + train)',walk:'~16 min walk from Amstel',big:true,note:'MOST IMPORTANT: this is where I\'ll need the most mental support 🙂',note2:'Pedestrian crossing point at Hugo de Vrieslaan/Middenweg.',early:15,pdf:[1441,915.5]},
-  '4': {id:'4',label:'4',km:37,title:'km 37 · Weesperplein',lat:52.35964,lon:4.90686,near:'Weesperplein (Metro 51 · 53 · 54)',walk:'~3 min walk from Weesperplein metro',note2:'Busy: half-marathon runners also pass here — look carefully!',pdf:[1045,573.5]},
-  '5': {id:'5',label:'🏁',km:42.195,title:'FINISH km 42 · Olympic Stadium',lat:52.34321,lon:4.85405,near:'Zuid (Metro 50 · 51 · 52 + train)',walk:'from Zuid, ~23 min walk (Amstelveenseweg metro closed 13:00–18:00)',fin:true,note:'No rush, no matter what — we hug at the finish!',pdf:[150,1010]}
+/* ---------- static fallbacks (data/routes.json overrides coords and adds geometry) ---------- */
+var SPOTS={start:[52.34363,4.85516],km6:[52.34623,4.87674],km13:[52.33921,4.90162],km32:[52.34743,4.92934],km37:[52.35957,4.90649],finish:[52.34363,4.85516]};
+var STATIONS={Zuid:[52.3389,4.873],RAI:[52.337,4.8902],Amstel:[52.3465,4.9176],Weesperplein:[52.3614,4.9074]};
+var STINFO={
+  Zuid:{lines:'Metro 51',train:true,dir:'top'},
+  RAI:{lines:'Metro 51',train:true,dir:'bottom'},
+  Amstel:{lines:'Metro 51',train:true,dir:'right'},
+  Weesperplein:{lines:'Metro 51',train:false,dir:'right'}
 };
-var SPOT_ORDER=['1','2a','2b','2c','3','4','5'];
-var STATIONS = [
-  {n:'Zuid',lat:52.3389,lon:4.8730,metro:'Metro 50 · 51 · 52',train:true,dir:'left'},
-  {n:'RAI',lat:52.3370,lon:4.8902,metro:'Metro 50 · 51',train:true,dir:'bottom'},
-  {n:'Europaplein',lat:52.3420,lon:4.8925,metro:'Metro 52',train:false,dir:'top'},
-  {n:'Amstel',lat:52.3465,lon:4.9176,metro:'Metro 51 · 53 · 54',train:true,dir:'bottom'},
-  {n:'Weesperplein',lat:52.3614,lon:4.9074,metro:'Metro 51 · 53 · 54',train:false,dir:'right'},
-  {n:'Amstelveenseweg',lat:52.3378,lon:4.8573,metro:'Metro 50 · 51',train:false,dir:'bottom',closed:true}
-];
-function st(n){for(var i=0;i<STATIONS.length;i++)if(STATIONS[i].n===n)return STATIONS[i];}
+var CLOSED={name:'Amstelveenseweg',ll:[52.3378,4.8573]};
+var NAMES={start:'Stadium',Zuid:'Zuid',RAI:'RAI',Amstel:'Amstel',Weesperplein:'Weesperplein',km6:'km 6',km13:'km 13',km32:'km 32',km37:'km 37',finish:'Finish'};
+var SPOTINFO={
+  start:{km:'Start',title:'Olympic Stadium',sub:'km 0 · Watch the start — my wave (6) starts at about 09:43',
+       tips:['Get here early: Metro 51 to Zuid + 23-min walk, or Amstelveenseweg metro (open in the morning — closed only 13:00–18:00).','After the start, walk 1.7 km (21 min) to Beethovenstraat for km 6.']},
+  km6:{km:'km 6',title:'Beethovenstraat',sub:'Just south of Stadionweg · 21 min from the stadium',pdf:[526,936],
+       tips:['Stand on the WEST side of Beethovenstraat so you can walk back to Zuid without crossing the course.','After I pass: walk to Zuid (14 min) for Metro 51 to RAI.']},
+  km13:{km:'km 13',title:'President Kennedylaan',sub:'Martin Luther Kingpark side · 13 min from RAI',pdf:[953,1136],
+       tips:['After I pass: walk back to RAI for Metro 51 to Amstel.']},
+  km32:{key:true,km:'km 32',title:'Hugo de Vrieslaan',sub:'Crossing point at Hugo de Vrieslaan / Middenweg · 13 min from Amstel',pdf:[1441,915.5],imp:true,
+       tips:[{t:'MOST IMPORTANT — this is where I will need the most mental support 🙂',cls:'imp'},'Half-marathon runners are on this road too — look carefully for me.']},
+  km37:{km:'km 37',title:'Weesperplein',sub:'3-min walk from Weesperplein metro',pdf:[1045,573.5],
+       tips:['Busy: half-marathon runners pass here too — look carefully!','Afterwards: Metro 51 back to Zuid and walk to the stadium. You will probably arrive after I finish → we meet at the Meeting Point.']},
+  finish:{km:'Finish',title:'Olympic Stadium',sub:'km 42.195 · 23-min walk from Zuid station',pdf:[150,1010],
+       tips:[{t:'⛔ Amstelveenseweg metro is closed 13:00–18:00 — get off at Zuid and walk.',cls:'red'},{t:'No rush, no matter what — we hug at the finish! 🤗',cls:'imp'}]}
+};
+/* the journey: one straight path (replaced by routes.json `journey` when it loads) */
+var JOURNEY=[{type:'spot',id:'start'},{type:'walk',id:'start-km6'},{type:'spot',id:'km6'},{type:'walk',id:'km6-Zuid'},{type:'metro',id:'Zuid-RAI'},{type:'walk',id:'RAI-km13'},{type:'spot',id:'km13'},
+  {type:'walk',id:'km13-RAI'},{type:'metro',id:'RAI-Amstel'},{type:'walk',id:'Amstel-km32'},{type:'spot',id:'km32'},
+  {type:'walk',id:'km32-Amstel'},{type:'metro',id:'Amstel-Weesperplein'},{type:'walk',id:'Weesperplein-km37'},{type:'spot',id:'km37'},
+  {type:'walk',id:'km37-Weesperplein'},{type:'metro',id:'Weesperplein-Zuid'},{type:'walk',id:'Zuid-finish'},{type:'spot',id:'finish'}];
+var STEPS=[]; // [{n, spot, legs:[refs]}]
+function buildSteps(){
+  STEPS=[];var legs=[];
+  JOURNEY.forEach(function(it){
+    if(it.type==='spot'){if(SPOTINFO[it.id]){STEPS.push({n:STEPS.length+1,spot:it.id,legs:legs});}legs=[];}
+    else legs.push(it.type+':'+it.id);
+  });
+  STEPS.forEach(function(st){var info=SPOTINFO[st.spot];
+    info.badge=(info.key||st.spot==='km32')?'★':(st.spot==='start'||st.spot==='finish')?'🏁':String(st.n);
+    info.label=(info.key||st.spot==='km32')?'★':st.spot==='finish'?'🏁':String(st.n);});
+}
+buildSteps();
 
-function popupHtml(s){
-  var h='<h3>'+esc(s.title)+'</h3>';
-  if(s.sub)h+='<div>'+esc(s.sub)+'</div>';
-  h+='<div><b>Nearest station:</b> '+esc(s.near)+'</div><div><b>Walk:</b> '+esc(s.walk)+'</div>';
-  if(s.best)h+='<div style="margin-top:4px"><span class="tag">BEST</span> <b>Recommended</b></div>';
-  if(s.warn)h+='<div style="margin-top:4px;color:#b26a00"><b>'+esc(s.warn)+'</b></div>';
-  if(s.pick)h+='<div><i>2a–2c: pick one depending on time/crowds</i></div>';
-  if(s.early){var by=etaClock(s.km,-s.early);if(by)h+='<div style="margin-top:4px"><b>Be there by ~'+esc(by)+'.</b></div>';}
-  if(s.note2)h+='<div style="margin-top:4px">'+esc(s.note2)+'</div>';
-  if(s.note)h+='<div style="margin-top:4px"><b>'+esc(s.note)+'</b></div>';
-  h+='<div style="color:#666;font-size:12px;margin-top:4px">Location approx. (±100 m)</div>';
-  h+='<a class="pbtn" target="_blank" rel="noopener" href="'+gmDir(s.lat,s.lon)+'">🚶 Walk here (Google Maps)</a>';
-  return h;
-}
-function stationPopup(s){
-  if(s.closed)return '<h3><s>'+esc(s.n)+'</s> — CLOSED</h3><div class="closedwarn">Metro station closed Sunday 13:00–18:00 — no metro stops here.</div><div style="margin-top:4px">Use <b>Zuid</b> instead (Metro 50 · 51 · 52 + train) and walk ~23 min to the Olympic Stadium.</div>';
-  var h='<h3>'+esc(s.n)+'</h3><div>'+esc(s.metro)+(s.train?' + Train':'')+'</div>';
-  if(s.extra)h+='<div>'+esc(s.extra)+'</div>';
-  h+='<a class="pbtn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'&travelmode=transit">🚇 Open in Google Maps</a>';
-  return h;
-}
+/* state */
+var state={step:1,open:true};
+var LS='cheermap.v3';
+try{var saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved){if(saved.step>=1&&saved.step<=STEPS.length)state.step=+saved.step;if(saved.open===false)state.open=false;}}catch(_){}
+document.body.classList.toggle('closed',!state.open);
+try{var qs=new URLSearchParams(location.search).get('step');if(qs&&/^\d{1,2}$/.test(qs)&&+qs>=1&&+qs<=STEPS.length)state.step=+qs;}catch(_){}
+function save(){try{localStorage.setItem(LS,JSON.stringify({step:state.step,open:state.open}));}catch(_){}
+  try{var q=new URLSearchParams(location.search);q.set('step',String(state.step));history.replaceState(null,'','?'+q.toString()+location.hash);}catch(_){}}
 
 /* ---------- street map ---------- */
-var street=L.map('street',{zoomControl:true,tap:true}).setView([52.348,4.888],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(street);
+var street=L.map('street',{zoomControl:true,tap:true,zoomSnap:0.5}).setView([52.345,4.895],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(street);
+street.createPane('course').style.zIndex=405;
+street.createPane('legs').style.zIndex=410;
+street.createPane('legsOn').style.zIndex=420;
+street.createPane('kmPane').style.zIndex=430;
 
-var streetMarkers={};
-var bounds=[];
-STATIONS.forEach(function(s){
-  var html='<div class="stn"><div class="mbadge'+(s.closed?' x':'')+'">'+(s.closed?'✕':'M')+'</div>'+(s.train?'<div class="tbadge">NS</div>':'')+'</div>';
-  var w=s.train?64:32;
-  var m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:'',html:html,iconSize:[w,28],iconAnchor:[w/2,14]}),zIndexOffset:500,title:s.n});
-  var tip=s.closed?'<b><s>'+esc(s.n)+'</s> — CLOSED 13:00–18:00</b>':'<b>'+esc(s.n)+'</b><small>'+esc(s.metro)+(s.train?' + 🚆':'')+'</small>';
-  m.bindTooltip(tip,{permanent:true,direction:s.dir,className:'stl'+(s.closed?' closed':''),offset:s.dir==='left'?[-10,0]:s.dir==='right'?[10,0]:s.dir==='top'?[0,-12]:[0,12]});
-  m.bindPopup(stationPopup(s));
-  m.addTo(street);bounds.push([s.lat,s.lon]);
-});
+var LEGS={},spotMarkers={},stationMarkers={},dataOk=false;
 
-var walkStyle={color:'#7B2CBF',weight:4,dashArray:'2 8',lineCap:'round',opacity:.95};
-var metroStyle={color:'#0066CC',weight:5,dashArray:'14 8',opacity:.9};
-function walk(a,b){L.polyline([[a.lat,a.lon],[b.lat,b.lon]],walkStyle).addTo(street);}
-walk(st('Zuid'),SPOTS['1']);walk(st('RAI'),SPOTS['2a']);walk(st('RAI'),SPOTS['2c']);walk(st('Europaplein'),SPOTS['2b']);
-walk(st('RAI'),SPOTS['2b']);
-walk(st('Amstel'),SPOTS['3']);walk(st('Weesperplein'),SPOTS['4']);walk(st('Zuid'),SPOTS['5']);
-[['Zuid','RAI','Metro 50/51'],['RAI','Amstel','Metro 51'],['Amstel','Weesperplein','Metro 51/53/54'],['Weesperplein','Zuid','Metro 51 · ~13 min',0],['Amstel','Zuid','Metro 51 · ~9 min',0.006]].forEach(function(h){
-  var a=st(h[0]),b=st(h[1]);
-  var pts=[[a.lat,a.lon]];
-  if(h[3])pts.push([(a.lat+b.lat)/2+h[3],(a.lon+b.lon)/2]);
-  pts.push([b.lat,b.lon]);
-  var l=L.polyline(pts,metroStyle).addTo(street);
-  l.bindTooltip(h[2],{permanent:true,direction:'center',className:'lbl'});
-});
+function legStyle(kind,pane){
+  return kind==='metro'
+    ?{pane:pane,color:'#0066CC',weight:5,opacity:1,lineCap:'round',lineJoin:'round'}
+    :{pane:pane,color:'#7B2CBF',weight:4,opacity:1,dashArray:'1 9',lineCap:'round',lineJoin:'round'};
+}
+/* Each leg gets its own casing+line, shown only while its step is active (drawn along the real path). */
+function addLeg(kind,d){
+  if(!d||!d.path||d.path.length<2)return;
+  var ll=d.path.map(function(p){return [p[0],p[1]];});
+  var id=kind+':'+d.id;
+  var casing=L.polyline(ll,{pane:'legsOn',color:'#fff',weight:kind==='metro'?10:9,opacity:1,lineCap:'round',lineJoin:'round'});
+  var line=L.polyline(ll,legStyle(kind,'legsOn'));
+  var mid=ll[Math.floor(ll.length/2)];
+  var txt=kind==='metro'?'Ⓜ 51 · '+d.min+' min':'🚶 '+fmtKm(d.km)+' · '+d.min+' min';
+  var tip=L.tooltip({permanent:true,direction:'center',className:'pill '+kind,interactive:false}).setLatLng(mid).setContent(esc(txt));
+  LEGS[id]={kind:kind,data:d,casing:casing,line:line,tip:tip,ll:ll};
+}
+/* Dim base network drawn ONCE: the shared metro track (longest legs only, no stacked duplicates) and one line per walk pair. */
+function drawBaseNetwork(metro,walks){
+  var base=metro.filter(function(a){
+    return !metro.some(function(b){return b!==a&&b.via&&b.via.indexOf(a.from)>=0&&b.via.indexOf(a.to)>=0&&b.via.length>(a.via||[]).length;});
+  });
+  base.forEach(function(d){if(d.path&&d.path.length>1)L.polyline(d.path,{pane:'legs',color:'#0066CC',weight:4,opacity:.3,lineCap:'round',lineJoin:'round'}).addTo(street);});
+  var seen={};
+  walks.forEach(function(d){
+    var key=[d.from,d.to].sort().join('|');if(seen[key]||!d.path||d.path.length<2)return;seen[key]=true;
+    L.polyline(d.path,{pane:'legs',color:'#7B2CBF',weight:3,opacity:.35,dashArray:'1 8',lineCap:'round',lineJoin:'round'}).addTo(street);
+  });
+}
+function setLegStyles(activeIds){
+  var b=[];
+  Object.keys(LEGS).forEach(function(id){
+    var lg=LEGS[id],on=activeIds.indexOf(id)>=0;
+    [lg.casing,lg.line,lg.tip].forEach(function(p){
+      if(on&&!street.hasLayer(p))p.addTo(street);else if(!on&&street.hasLayer(p))street.removeLayer(p);
+    });
+    if(on)lg.ll.forEach(function(x){b.push(x);});
+  });
+  return b;
+}
 
-SPOT_ORDER.forEach(function(id){
-  var s=SPOTS[id];var sz=s.big?54:42;
-  var m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:'',html:'<div class="spot'+(s.big?' big':'')+(s.fin?' fin':'')+(s.best?' best':'')+'">'+s.label+(s.best?'<span class="besttag">BEST</span>':'')+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),zIndexOffset:s.big?1200:1000,title:s.title});
-  m.bindPopup(function(){return popupHtml(s);},{maxWidth:280});
-  m.addTo(street);streetMarkers[id]=m;bounds.push([s.lat,s.lon]);
-});
-street.fitBounds(bounds,{padding:[30,30],maxZoom:14});
+function drawCourse(d){
+  var c=d.course.map(function(p){return [p[0],p[1]];});
+  L.polyline(c,{pane:'course',color:'#fff',weight:9,opacity:.95,lineJoin:'round'}).addTo(street);
+  L.polyline(c,{pane:'course',color:'#E10600',weight:5,opacity:1,lineJoin:'round'}).addTo(street);
+  (d.km_markers||[]).forEach(function(k){
+    L.marker([k.lat,k.lon],{pane:'kmPane',interactive:false,icon:L.divIcon({className:'',html:'<div class="kmm">'+esc(k.km)+'</div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(street);
+  });
+}
+
+function stationPopup(n,info){
+  var h='<h3>'+esc(n)+'</h3><div>'+esc(info.lines)+(info.train?' + 🚆 NS train':'')+'</div>';
+  h+='<a class="pbtn" target="_blank" rel="noopener" href="'+gmDir(STATIONS[n],'transit')+'">🚇 Route here (Google Maps)</a>';
+  return h;
+}
+function drawStations(){
+  Object.keys(STINFO).forEach(function(n){
+    var info=STINFO[n],ll=STATIONS[n];if(!ll)return;
+    var html='<div class="stn"><div class="mbadge">M</div>'+(info.train?'<div class="tbadge">NS</div>':'')+'</div>';
+    var w=info.train?62:30;
+    var m=L.marker(ll,{icon:L.divIcon({className:'',html:html,iconSize:[w,26],iconAnchor:[w/2,13]}),zIndexOffset:500,title:n});
+    var o=w/2+4;
+    m.bindTooltip('<b>'+esc(n)+'</b><small>'+esc(info.lines)+'</small>',{permanent:true,direction:info.dir,className:'stl',offset:info.dir==='left'?[-o,0]:info.dir==='right'?[o,0]:info.dir==='top'?[0,-15]:[0,15]});
+    m.bindPopup(stationPopup(n,info));
+    m.addTo(street);stationMarkers[n]=m;
+  });
+  var c=L.marker(CLOSED.ll,{icon:L.divIcon({className:'',html:'<div class="stn"><div class="mbadge x">✕</div></div>',iconSize:[24,22],iconAnchor:[12,11]}),zIndexOffset:400,title:CLOSED.name+' (closed)'});
+  c.bindTooltip('⛔ '+esc(CLOSED.name)+' closed 13–18 h',{permanent:true,direction:'bottom',className:'stl closed',offset:[0,12]});
+  c.bindPopup('<h3><s>'+esc(CLOSED.name)+'</s> — CLOSED</h3><div style="color:#b00000;font-weight:800">Metro station closed Sunday 13:00–18:00.</div><div style="margin-top:4px">Use <b>Zuid</b> instead and walk ~23 min to the Olympic Stadium.</div>');
+  c.addTo(street);
+}
+
+function stepForSpot(id){for(var i=0;i<STEPS.length;i++)if(STEPS[i].spot===id)return STEPS[i].n;return 1;}
+function spotHtml(id,on){
+  var s=SPOTINFO[id];
+  var cls='spot'+(id==='km32'?' big':'')+(id==='finish'?' fin':'')+(on?' on':'');
+  return '<div class="spotwrap'+(id==='km32'?' pulse':'')+'"><div class="'+cls+'">'+esc(s.badge)+'</div></div>';
+}
+function spotSize(id){return id==='km32'?52:40;}
+function markerIdFor(spot){return spot==='start'?'finish':spot;}
+function drawSpots(){
+  Object.keys(SPOTINFO).forEach(function(id){
+    if(id==='start')return; // start & finish share the stadium marker
+    var sz=spotSize(id);
+    var m=L.marker(SPOTS[id],{icon:L.divIcon({className:'',html:spotHtml(id,false),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),zIndexOffset:id==='km32'?1200:1000,title:SPOTINFO[id].km+' · '+SPOTINFO[id].title});
+    m.on('click',function(){
+      if(id==='finish'){var cur=STEPS[state.step-1].spot;setStep(stepForSpot(cur==='finish'?'start':'finish'));}
+      else setStep(stepForSpot(id));
+    });
+    m.addTo(street);spotMarkers[id]=m;
+  });
+}
+function refreshSpots(active){
+  active=markerIdFor(active);
+  Object.keys(spotMarkers).forEach(function(id){
+    var sz=spotSize(id);
+    spotMarkers[id].setIcon(L.divIcon({className:'',html:spotHtml(id,id===active),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}));
+    spotMarkers[id].setZIndexOffset(id===active?1500:id==='km32'?1200:1000);
+  });
+}
 
 /* locate */
 var locLayer=null;
@@ -306,8 +390,122 @@ street.on('locationerror',function(e){
   toast(e&&e.code===1?'Location permission denied. Enable it in your browser settings to see where you are.':'Could not find your location. Try again outside or check GPS.');
 });
 
-/* ---------- course map ---------- */
-var course=null,courseReady=false,courseHot={},courseTried=false;
+/* ---------- sheet ---------- */
+function legRow(ref){
+  var p=ref.split(':'),kind=p[0],id=p[1];
+  var d=LEGS[ref]&&LEGS[ref].data,ft=id.split('-'),from=NAMES[ft[0]]||ft[0],to=NAMES[ft[1]]||ft[1];
+  if(kind==='metro'){
+    var via=d&&d.via&&d.via.length>2?' · via '+d.via.slice(1,-1).join(', '):'';
+    return '<li class="leg"><span class="ic metro">M</span><div><div class="l1">Metro 51 · '+esc(from)+' → '+esc(to)+'</div><div class="l2">'+
+      (d?esc(d.stops+(d.stops===1?' stop':' stops')+' · '+fmtKm(d.km)+' · ')+'<b>'+esc(d.min+' min')+'</b>'+esc(via):'a few minutes')+'</div></div></li>';
+  }
+  return '<li class="leg"><span class="ic walk">🚶</span><div><div class="l1">Walk · '+esc(from)+' → '+esc(to)+'</div><div class="l2">'+(d?esc(fmtKm(d.km))+' · <b>'+esc(d.min+' min')+'</b>':'see Google Maps')+'</div></div></li>';
+}
+function totals(refs){
+  var min=0,km=0,n=0,hasMetro=false;
+  refs.forEach(function(r){var lg=LEGS[r];if(r.indexOf('metro:')===0)hasMetro=true;if(lg){min+=lg.data.min;n++;if(lg.kind==='walk')km+=lg.data.km;}});
+  return {min:min,km:km,ok:n>0,hasMetro:hasMetro};
+}
+function renderStepper(){
+  var h='<button class="arrow" id="prev" aria-label="Previous stop"'+(state.step===1?' disabled':'')+'>‹</button>';
+  STEPS.forEach(function(s){
+    var info=SPOTINFO[s.spot];
+    h+='<button role="tab" data-step="'+s.n+'" class="'+(s.spot==='km32'?'star':'')+'"'+(s.n===state.step?' aria-current="step" aria-selected="true"':' aria-selected="false"')+' aria-label="Stop '+s.n+': '+esc(info.km+' '+info.title)+'">'+esc(info.label)+'</button>';
+  });
+  h+='<button class="arrow" id="next" aria-label="Next stop"'+(state.step===STEPS.length?' disabled':'')+'>›</button>';
+  $('stepper').innerHTML=h;
+}
+function renderCard(){
+  var s=STEPS[state.step-1],info=SPOTINFO[s.spot],refs=s.legs,prev=state.step>1?SPOTINFO[STEPS[state.step-2].spot]:null;
+  var eyebrow='Stop '+s.n+' of '+STEPS.length;
+  var h='<div class="head"><div><div class="eyebrow">'+esc(eyebrow)+(info.imp?' · <span class="imp">★ Most important</span>':'')+'</div>';
+  h+='<h2 class="title">'+esc(info.km)+' · '+esc(info.title)+'</h2></div>';
+  h+='<button class="close" data-close aria-label="Hide the plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>';
+  h+='<p class="sub">'+esc(info.sub)+'</p>';
+  $('bartext').innerHTML='Stop '+esc(s.n+'/'+STEPS.length)+' · '+esc(info.km+' '+info.title)+'<small>Tap to open the plan</small>';
+  var t=totals(refs);
+  if(refs.length){
+    h+='<div class="how">How to get here'+(prev?' from '+esc(prev.km):'')+'</div>';
+    h+='<ol class="legs">'+refs.map(legRow).join('')+'</ol>';
+    if(t.ok)h+='<div class="total"><span>🚶 '+esc(fmtKm(t.km))+' on foot'+(t.hasMetro?' + metro':'')+'</span><b>Total ≈ '+esc(t.min)+' min'+(t.hasMetro?' + waiting':'')+'</b></div>';
+    else if(!dataOk)h+='<div class="total"><span>Distances unavailable offline — use Google Maps.</span></div>';
+  }else{
+    h+='<ol class="legs"><li class="leg"><span class="ic metro">M</span><div><div class="l1">Metro 51 → Zuid, then walk</div><div class="l2">1.9 km · <b>23 min</b> to the stadium</div></div></li></ol>';
+  }
+  h+='<a class="btn" target="_blank" rel="noopener" href="'+gmDir(SPOTS[s.spot],(t.hasMetro||!refs.length)?'transit':'walking')+'">🧭 Navigate in Google Maps</a>';
+  if(state.step<STEPS.length){var nx=SPOTINFO[STEPS[state.step].spot];h+='<div class="nextrow"><button class="btn alt" data-go="'+(state.step+1)+'">Next: '+esc(nx.badge+' '+nx.km+' · '+nx.title)+' ›</button></div>';}
+  var th='';
+  (info.tips||[]).forEach(function(tp){var txt=typeof tp==='string'?tp:tp.t,cls=typeof tp==='string'?'':tp.cls;if(txt)th+='<li class="'+esc(cls||'')+'">'+esc(txt)+'</li>';});
+  if(th)h+='<ul class="tips">'+th+'</ul>';
+  $('stepcard').innerHTML=h;
+  $('sheetbody').scrollTop=0;
+}
+var fitToken=0,desktopMq=window.matchMedia('(min-width:900px)');
+function updateMap(fit,instant){
+  var s=STEPS[state.step-1];
+  var b=setLegStyles(s.legs);
+  refreshSpots(s.spot);
+  b.push(SPOTS[s.spot]);
+  if(!s.legs.length)b.push(STATIONS.Zuid);
+  if(fit&&view==='street'){
+    var bb=L.latLngBounds(b),token=++fitToken;
+    var doFit=function(){if(token!==fitToken)return;street.invalidateSize();street.fitBounds(bb,{paddingTopLeft:[44,desktopMq.matches?40:72],paddingBottomRight:[44,desktopMq.matches?50:62],maxZoom:16,animate:!instant});};
+    if(street._animatingZoom)street.once('zoomend',doFit);else doFit();
+  }
+}
+function setStep(n,instant){
+  state.step=Math.max(1,Math.min(STEPS.length,n));
+  renderStepper();renderCard();updateMap(true,instant);save();
+}
+$('stepper').addEventListener('click',function(ev){
+  var b=ev.target.closest('button');if(!b||b.disabled)return;
+  if(b.id==='prev')setStep(state.step-1);
+  else if(b.id==='next')setStep(state.step+1);
+  else if(b.hasAttribute('data-step'))setStep(+b.getAttribute('data-step'));
+});
+$('stepcard').addEventListener('click',function(ev){
+  var b=ev.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-go'))setStep(+b.getAttribute('data-go'));
+  else if(b.hasAttribute('data-close'))setOpen(false);
+});
+function setOpen(o){
+  state.open=!!o;
+  document.body.classList.toggle('closed',!state.open);
+  $('bar').setAttribute('aria-expanded',String(state.open));
+  save();
+  street.invalidateSize();if(course)course.invalidateSize();
+  setTimeout(function(){street.invalidateSize();if(course)course.invalidateSize();updateMap(true);},50);
+}
+$('bar').addEventListener('click',function(){setOpen(true);});
+$('openpanel').addEventListener('click',function(){setOpen(true);});
+/* drag the handle down to close, drag the bar up to open */
+['grab','bar'].forEach(function(id){
+  var el=$(id),y0=null;
+  el.addEventListener('touchstart',function(e){y0=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchend',function(e){
+    if(y0===null)return;var dy=e.changedTouches[0].clientY-y0;y0=null;
+    if(dy>30)setOpen(false);else if(dy<-30)setOpen(true);
+  },{passive:true});
+});
+$('grab').addEventListener('click',function(){setOpen(false);});
+/* swipe left/right on the sheet to change stop */
+(function(){
+  var x0=null,y0=null,el=$('sheet');
+  el.addEventListener('touchstart',function(e){if(!state.open||e.target.closest('#grab,#bar')){x0=null;return;}var t=e.touches[0];x0=t.clientX;y0=t.clientY;},{passive:true});
+  el.addEventListener('touchend',function(e){
+    if(x0===null)return;var t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)>70&&Math.abs(dy)<40){if(dx<0&&state.step<STEPS.length)setStep(state.step+1);else if(dx>0&&state.step>1)setStep(state.step-1);}
+  },{passive:true});
+})();
+
+/* ---------- course map (official image) ---------- */
+var course=null,courseTried=false;
+function coursePopup(id){
+  var s=SPOTINFO[id];
+  return '<h3>'+esc(s.km+' · '+s.title)+'</h3><div>'+esc(s.sub)+'</div>'+
+    '<a class="pbtn" href="#" data-goto="'+esc(id)+'">🗺️ Show on street map</a>'+
+    '<a class="pbtn alt" target="_blank" rel="noopener" href="'+gmDir(SPOTS[id],'transit')+'">🧭 Navigate in Google Maps</a>';
+}
 function initCourse(){
   if(courseTried)return;courseTried=true;
   var img=new Image();
@@ -319,21 +517,20 @@ function initCourse(){
     course.fitBounds(b);
     course.setMinZoom(course.getZoom()-1.5);
     course.setMaxBounds([[-H*0.25,-W*0.25],[H*1.25,W*1.25]]);
-    SPOT_ORDER.forEach(function(id){
-      var s=SPOTS[id];
-      var ll=[H-s.pdf[1]*1.5,s.pdf[0]*1.5];
-      var c=L.circle(ll,{radius:34,color:'#000',weight:2,fillColor:'#FFD400',fillOpacity:.18,opacity:.45,className:'hot'}).addTo(course);
-      c.bindPopup(function(){return popupHtml(s);},{maxWidth:280});
-      courseHot[id]=c;
+    Object.keys(SPOTINFO).forEach(function(id){
+      var s=SPOTINFO[id];if(!s.pdf)return;
+      var c=L.circle([H-s.pdf[1]*1.5,s.pdf[0]*1.5],{radius:34,color:'#000',weight:2,fillColor:'#FFD400',fillOpacity:.2,opacity:.5,className:'hot'}).addTo(course);
+      c.bindPopup(function(){return coursePopup(id);},{maxWidth:280});
     });
-    courseReady=true;
+    course.on('popupopen',function(e){
+      var a=e.popup.getElement().querySelector('[data-goto]');
+      if(a)a.addEventListener('click',function(ev){ev.preventDefault();var id=a.getAttribute('data-goto');setView('street');setStep(stepForSpot(id));});
+    });
     setTimeout(function(){course.invalidateSize();course.fitBounds(b);},50);
-    if(pendingCourse){var p=pendingCourse;pendingCourse=null;focusSpot(p);}
   };
   img.onerror=function(){$('err').style.display='flex';};
   img.src='assets/support-map.jpg';
 }
-var pendingCourse=null;
 
 /* ---------- tabs ---------- */
 var view='street';
@@ -343,107 +540,42 @@ function setView(v){
   $('tab-course').setAttribute('aria-selected',v==='course');
   $('box-street').classList.toggle('hidden',v!=='street');
   $('box-course').classList.toggle('hidden',v!=='course');
-  if(v==='street'){street.invalidateSize();}
+  if(v==='street'){street.invalidateSize();updateMap(true);}
   else{initCourse();if(course)course.invalidateSize();}
 }
 $('tab-street').addEventListener('click',function(){setView('street');});
 $('tab-course').addEventListener('click',function(){setView('course');});
 
-function focusSpot(id){
-  var s=SPOTS[id];if(!s)return;
-  if(view==='street'){
-    street.flyTo([s.lat,s.lon],16,{duration:.8});
-    street.once('moveend',function(){streetMarkers[id].openPopup();});
-  }else if(courseReady){
-    var c=courseHot[id];course.flyTo(c.getLatLng(),Math.max(course.getZoom(),0),{duration:.6});c.openPopup();
-  }else{pendingCourse=id;}
-}
+/* ---------- boot ---------- */
+$('bar').setAttribute('aria-expanded',String(state.open));
+drawStations();
+drawSpots();
+renderStepper();renderCard();updateMap(false);
+street.fitBounds(L.latLngBounds([SPOTS.finish,SPOTS.km32,[52.364,4.85],[52.33,4.935]]),{padding:[20,20],animate:false});
 
-/* ---------- sheet ---------- */
-var panel=$('panel'),handle=$('handle');
-var desktop=window.matchMedia('(min-width:900px)');
-function setOpen(o){
-  panel.classList.toggle('open',o);handle.setAttribute('aria-expanded',o);
-  $('handlehint').textContent=o?'Tap here to close the plan':'Tap to open the plan & ETAs';
-}
-handle.addEventListener('click',function(){if(!desktop.matches)setOpen(!panel.classList.contains('open'));});
-function collapseOnMobile(){if(!desktop.matches)setOpen(false);}
-function peek(){
-  var h=handle.offsetHeight;
-  document.documentElement.style.setProperty('--sheet-peek',desktop.matches?'0px':h+'px');
-}
-window.addEventListener('resize',peek);
-
-document.querySelectorAll('[data-spot]').forEach(function(el){
-  el.addEventListener('click',function(ev){
-    var b=ev.target.closest('button[data-spot]');
-    var id=b?b.getAttribute('data-spot'):el.getAttribute('data-spot');
-    if(el.tagName==='LI'&&b&&b!==el&&ev.currentTarget!==b)return; // chip handles itself
-    ev.stopPropagation();
-    collapseOnMobile();focusSpot(id);
-  });
-});
-
-/* ---------- ETA ---------- */
-var LS='cheermap.v2';
-var KM_TOTAL=42.195;
-function parseStart(s){var m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim());if(!m)return null;var h=+m[1],mi=+m[2];if(h>23||mi>59)return null;return h*3600+mi*60;}
-function parseGoal(s){var m=/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec((s||'').trim());if(!m)return null;var h=+m[1],mi=+m[2],se=m[3]?+m[3]:0;if(mi>59||se>59)return null;var t=h*3600+mi*60+se;return t>0?t:null;}
-function parsePace(s){var m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim());if(!m)return null;var mi=+m[1],se=+m[2];if(se>59)return null;var t=mi*60+se;return t>=120&&t<=1200?t:null;}
-function p2(n){return (n<10?'0':'')+n;}
-function fmtHMS(sec){sec=Math.round(sec);return Math.floor(sec/3600)+':'+p2(Math.floor(sec%3600/60))+':'+p2(sec%60);}
-function fmtPace(sec){sec=Math.round(sec);return Math.floor(sec/60)+':'+p2(sec%60);}
-function fmtClock(sec){sec=Math.round(sec/60)*60;sec=((sec%86400)+86400)%86400;var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return p2(h)+':'+p2(m);}
-function etaClock(km,offMin){
-  var s=parseStart($('start').value),g=parseGoal($('goal').value);
-  if(s===null||g===null)return null;
-  return fmtClock(s+g*km/KM_TOTAL+(offMin||0)*60);
-}
-function update(save){
-  var s=parseStart($('start').value),g=parseGoal($('goal').value),pc=parsePace($('pace').value);
-  var e=[];if(s===null)e.push('Start time should look like 09:45');if(pc===null)e.push('Pace should look like 8:00 (min:sec per km)');if(g===null)e.push('Goal should look like 5:37:34');
-  $('inputerr').textContent=e.join(' · ');
-  document.querySelectorAll('[data-km]').forEach(function(el){
-    if(s===null||g===null){el.textContent='';el.style.display='none';return;}
-    var km=parseFloat(el.getAttribute('data-km')),off=parseFloat(el.getAttribute('data-off')||'0');
-    el.textContent=(el.getAttribute('data-pre')||'')+'~'+fmtClock(s+g*km/KM_TOTAL+off*60);el.style.display='';
-  });
-  if(save&&s!==null&&g!==null&&pc!==null){
-    var q=new URLSearchParams(location.search);q.set('start',$('start').value.trim());q.set('pace',$('pace').value.trim());q.delete('goal');
-    try{history.replaceState(null,'','?'+q.toString()+location.hash);}catch(_){}
-    try{localStorage.setItem(LS,JSON.stringify({start:$('start').value.trim(),pace:$('pace').value.trim()}));}catch(_){}
+function applyData(d){
+  if(d.spots)Object.keys(d.spots).forEach(function(k){if(SPOTS[k])SPOTS[k]=d.spots[k];});
+  if(d.stations)Object.keys(d.stations).forEach(function(k){if(STATIONS[k])STATIONS[k]=d.stations[k];});
+  Object.keys(spotMarkers).forEach(function(k){if(SPOTS[k])spotMarkers[k].setLatLng(SPOTS[k]);});
+  Object.keys(stationMarkers).forEach(function(k){stationMarkers[k].setLatLng(STATIONS[k]);});
+  if(d.course)drawCourse(d);
+  drawBaseNetwork(d.metro||[],d.walks||[]);
+  (d.metro||[]).forEach(function(m){addLeg('metro',m);});
+  (d.walks||[]).forEach(function(w){addLeg('walk',w);});
+  if(d.journey&&d.journey.length){
+    var ok=d.journey.filter(function(it){return it.type==='spot'&&SPOTINFO[it.id];}).length;
+    if(ok>=2){JOURNEY=d.journey.filter(function(it){return it.type==='spot'?!!SPOTINFO[it.id]:true;});buildSteps();}
   }
+  dataOk=true;
+  setStep(state.step,true);
 }
-function paceToGoal(){var p=parsePace($('pace').value);if(p!==null)$('goal').value=fmtHMS(p*KM_TOTAL);}
-function goalToPace(){var g=parseGoal($('goal').value);if(g!==null){var p=Math.round(g/KM_TOTAL);if(p>0)$('pace').value=fmtPace(p);}}
-(function init(){
-  var q=new URLSearchParams(location.search),st0=q.get('start'),pc0=q.get('pace'),g0=q.get('goal');
-  if(st0===null&&pc0===null&&g0===null){
-    try{var o=JSON.parse(localStorage.getItem(LS)||'null');if(o){st0=o.start;pc0=o.pace;}}catch(_){}
-  }
-  if(st0&&parseStart(st0)!==null)$('start').value=fmtClock(parseStart(st0));
-  if(pc0&&parsePace(pc0)!==null){$('pace').value=String(pc0).trim();paceToGoal();}
-  else if(g0&&parseGoal(g0)!==null){$('goal').value=String(g0).trim();goalToPace();}
-  update(false);
-})();
-$('start').addEventListener('input',function(){update(true);});
-$('pace').addEventListener('input',function(){paceToGoal();update(true);});
-$('goal').addEventListener('input',function(){goalToPace();update(true);});
-$('copy').addEventListener('click',function(){
-  update(true);
-  var q=new URLSearchParams();q.set('start',$('start').value.trim());q.set('pace',$('pace').value.trim());
-  var url=location.origin+location.pathname+'?'+q.toString();
-  function fallback(){
-    var ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,99999);
-    var ok=false;try{ok=document.execCommand('copy');}catch(_){}
-    document.body.removeChild(ta);
-    if(ok)toast('Link copied!');else window.prompt('Copy this link:',url);
-  }
-  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(url).then(function(){toast('Link copied!');},fallback);}else fallback();
-});
+function dataFail(msg){var n=$('datanote');n.textContent=msg;n.hidden=false;setStep(state.step,true);}
+if(window.fetch){
+  fetch('data/routes.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(applyData).catch(function(e){dataFail('Route lines unavailable ('+(e&&e.message?e.message:'load error')+'). Stops & navigation still work.');});
+}else dataFail('Route lines unavailable in this browser.');
 
-peek();
-setTimeout(peek,300);
+window.addEventListener('resize',function(){street.invalidateSize();if(course)course.invalidateSize();});
 })();
 </script>
 </body>
