@@ -20,12 +20,30 @@ WHT = (1, 1, 1)
 NAVY = (0, 0x30 / 255, 0x82 / 255)
 NSY = (1.0, 0xC9 / 255, 0x17 / 255)
 MAG = (0.90, 0.0, 0.50)
-FONT = "hebo"
+RED = (0.80, 0.0, 0.0)
+_FD = "/System/Library/Fonts/Supplemental/"
+FB = dict(fontname="arialb", fontfile=_FD + "Arial Bold.ttf")
+FR = dict(fontname="arialr", fontfile=_FD + "Arial.ttf")
+_FBF = pymupdf.Font(fontfile=_FD + "Arial Bold.ttf")
+_FRF = pymupdf.Font(fontfile=_FD + "Arial.ttf")
 P = pymupdf.Point
 
 
-def tlen(t, fs):
-    return pymupdf.get_text_length(t, fontname=FONT, fontsize=fs)
+def tlen(t, fs, bold=True):
+    return (_FBF if bold else _FRF).text_length(t, fontsize=fs)
+
+
+def wrap(t, fs, width, bold=False):
+    lines, cur = [], ""
+    for w in t.split():
+        trial = (cur + " " + w).strip()
+        if tlen(trial, fs, bold) <= width or not cur:
+            cur = trial
+        else:
+            lines.append(cur); cur = w
+    if cur:
+        lines.append(cur)
+    return lines
 
 
 def star(page, c, r, fill=YEL, width=2.5):
@@ -78,7 +96,7 @@ def label(page, tail, d, text, num, fs=24, big=False, has_star=False):
     s.finish(fill=BLK, color=BLK)
     s.commit()
     nfs = fs * 0.95
-    page.insert_text(P(bc.x - tlen(num, nfs) / 2, bc.y + nfs * 0.35), num, fontname=FONT, fontsize=nfs, color=YEL)
+    page.insert_text(P(bc.x - tlen(num, nfs) / 2, bc.y + nfs * 0.35), num, **FB, fontsize=nfs, color=YEL)
     x = r.x0 + pad + nb + 6
     if has_star:
         star(page, (x + fs * 0.5, c.y), fs * 0.62, fill=BLK, width=1)
@@ -86,7 +104,7 @@ def label(page, tail, d, text, num, fs=24, big=False, has_star=False):
     n = len(lines)
     for i, ln in enumerate(lines):
         yy = c.y + (i - (n - 1) / 2) * fs * 1.15 + fs * 0.35
-        page.insert_text(P(x, yy), ln, fontname=FONT, fontsize=fs, color=BLK)
+        page.insert_text(P(x, yy), ln, **FB, fontsize=fs, color=BLK)
     return r
 
 
@@ -97,7 +115,7 @@ def metro_badge(page, x, y, sz):
     s.finish(fill=NAVY, color=WHT, width=1.5)
     s.commit()
     fs = sz * 0.8
-    page.insert_text(P(x + sz / 2 - tlen("M", fs) / 2, y + sz * 0.78), "M", fontname=FONT, fontsize=fs, color=WHT)
+    page.insert_text(P(x + sz / 2 - tlen("M", fs) / 2, y + sz * 0.78), "M", **FB, fontsize=fs, color=WHT)
 
 
 def train_badge(page, x, y, sz):
@@ -107,14 +125,16 @@ def train_badge(page, x, y, sz):
     s.finish(fill=NAVY, color=NAVY, width=1)
     s.commit()
     fs = sz * 0.6
-    page.insert_text(P(r.x0 + r.width / 2 - tlen("NS", fs) / 2, y + sz * 0.7), "NS", fontname=FONT, fontsize=fs, color=NSY)
+    page.insert_text(P(r.x0 + r.width / 2 - tlen("NS", fs) / 2, y + sz * 0.7), "NS", **FB, fontsize=fs, color=NSY)
 
 
-def station(page, name, sub, badges, tl, icons, fs=22):
+def station(page, name, sub, badges, tl, icons, fs=22, closed=False):
     """Callout: white rounded box, navy border, badges + name/lines, leader lines to icons."""
     bsz = 30
     bw = sum(bsz * (1.45 if b == "T" else 1) + 5 for b in badges)
     tw = max(tlen(name, fs), tlen(sub, fs * 0.82))
+    if closed:
+        tw = max(tlen(name, fs), tlen(sub, fs * 0.82))
     w = 12 + bw + tw + 12
     h = fs * 2.35 + 4
     r = pymupdf.Rect(tl[0], tl[1], tl[0] + w, tl[1] + h)
@@ -134,17 +154,23 @@ def station(page, name, sub, badges, tl, icons, fs=22):
         s.commit()
     s = page.new_shape()
     s.draw_rect(r, radius=0.18)
-    s.finish(fill=WHT, color=NAVY, width=4.5)
+    s.finish(fill=WHT, color=RED if closed else NAVY, width=6 if closed else 4.5)
     s.commit()
     x = r.x0 + 12
     by = cy - bsz / 2
     for b in badges:
         if b == "M":
-            metro_badge(page, x, by, bsz); x += bsz + 5
+            metro_badge(page, x, by, bsz)
+            if closed:
+                s = page.new_shape()
+                s.draw_line(P(x - 4, by + bsz + 4), P(x + bsz + 4, by - 4))
+                s.finish(color=RED, width=6, lineCap=1)
+                s.commit()
+            x += bsz + 5
         else:
             train_badge(page, x, by, bsz); x += bsz * 1.45 + 5
-    page.insert_text(P(x, r.y0 + fs * 1.15 + 2), name, fontname=FONT, fontsize=fs, color=NAVY)
-    page.insert_text(P(x, r.y0 + fs * 1.15 + 2 + fs * 0.98), sub, fontname=FONT, fontsize=fs * 0.82, color=BLK)
+    page.insert_text(P(x, r.y0 + fs * 1.15 + 2), name, **FB, fontsize=fs, color=RED if closed else NAVY)
+    page.insert_text(P(x, r.y0 + fs * 1.15 + 2 + fs * 0.98), sub, **FB, fontsize=fs * 0.82, color=RED if closed else BLK)
     return r
 
 
@@ -156,27 +182,27 @@ def dashed(page, a, b, width=4.5):
         s.commit()
 
 
-def small_tag(page, text, a, b, fs=17):
-    m = P((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+def small_tag(page, text, a, b, fs=17, f=0.5):
+    m = P(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f)
     w = tlen(text, fs) + 14
     r = pymupdf.Rect(m.x - w / 2, m.y - fs * 0.85, m.x + w / 2, m.y + fs * 0.75)
     s = page.new_shape()
     s.draw_rect(r, radius=0.3)
     s.finish(fill=MAG, color=WHT, width=2)
     s.commit()
-    page.insert_text(P(r.x0 + 7, m.y + fs * 0.33), text, fontname=FONT, fontsize=fs, color=WHT)
+    page.insert_text(P(r.x0 + 7, m.y + fs * 0.33), text, **FB, fontsize=fs, color=WHT)
 
 
 # ---------------------------------------------------------------- data
 # spots: key -> (point, arrow angle deg (direction of travel), text, badge, big)
 SPOTS = {
-    "1": ((526, 936), 120, "km 6 · Beethovenstraat", "1"),
-    "2a": ((1020.5, 978), 150, "km 12 · Rijnstraat", "2a"),
-    "2b": ((953, 1136), 180, "km 13 · Pres. Kennedylaan", "2b"),
-    "2c": ((939, 1276), -160, "km 14 · Amsteldijk", "2c"),
-    "3": ((1441, 915.5), -45, "km 32 · MOST IMPORTANT\nHugo de Vrieslaan", "3"),
-    "4": ((1045, 573.5), 45, "km 37 · Weesperplein", "4"),
-    "5": ((150, 1010), -120, "FINISH km 42 · HUG!\nOlympic Stadium", "5"),
+    "1": ((526, 936), 120, "km 6 · Beethovenstraat · ~10:33", "1"),
+    "2a": ((1020.5, 978), 150, "km 12 · ~11:21 (only if early)", "2a"),
+    "2b": ((953, 1136), 180, "2b km 13 · Pres. Kennedylaan · ~11:29 (best)", "2b"),
+    "2c": ((939, 1276), -160, "km 14 · Amsteldijk · ~11:37", "2c"),
+    "3": ((1441, 915.5), -45, "km 32 · MOST IMPORTANT · ~14:01\nHugo de Vrieslaan", "3"),
+    "4": ((1045, 573.5), 45, "km 37 · Weesperplein · ~14:41", "4"),
+    "5": ((150, 1010), -120, "FINISH ~15:23 · HUG!\nOlympic Stadium", "5"),
 }
 STATIONS = [
     # name, sub, badges, box top-left, icon points
@@ -185,7 +211,7 @@ STATIONS = [
     ("EUROPAPLEIN", "Metro 52", "M", (625, 1010), [(776, 1066)]),
     ("AMSTEL", "Metro 51 · 53 · 54 + Train", "MT", (1000, 775), [(1232, 914), (1229, 944)]),
     ("WEESPERPLEIN", "Metro 51 · 53 · 54", "M", (1140, 445), [(1070, 527)]),
-    ("AMSTELVEENSEWEG", "Metro 50 · 51 (nearest to finish)", "M", (15, 1290), [(196, 1158)]),
+    ("AMSTELVEENSEWEG", "CLOSED 13:00-18:00 - use Zuid", "M", (15, 1290), [(196, 1158)], True),
 ]
 
 
@@ -197,16 +223,17 @@ def annotate(page):
         (RAI, SPOTS["2a"][0], None), (RAI, SPOTS["2b"][0], None), (RAI, SPOTS["2c"][0], None),
         (RAI, AMS, "Metro 51"), (AMS, SPOTS["3"][0], None),
         (AMS, WPL, "Metro 51/53/54"), (WPL, SPOTS["4"][0], None),
-        (WPL, AVW, "Metro 51"), (AVW, SPOTS["5"][0], None),
+        (WPL, Z, "Metro 51"), (Z, SPOTS["5"][0], "walk ~23 min"),
     ]
     for a, b, t in legs:
         dashed(page, a, b, 4.5 if t else 3.5)
     for a, b, t in legs:
         if t:
-            small_tag(page, t, a, b)
+            if not t.startswith('walk'):
+                small_tag(page, t, a, b)
     # station callouts
-    for name, sub, bd, tl, icons in STATIONS:
-        station(page, name, sub, bd, tl, icons)
+    for name, sub, bd, tl, icons, *cl in STATIONS:
+        station(page, name, sub, bd, tl, icons, closed=bool(cl))
     # arrows + labels
     for k, (pt, ang, text, num) in SPOTS.items():
         big = k == "3"
@@ -222,69 +249,118 @@ def annotate(page):
         tail, d = arrow(page, pt, ang, length=118 if big else 80, w=22 if big else 14,
                         hw=54 if big else 34, hl=60 if big else 40, gap=30 if big else 6)
         label(page, tail, d, text, num, fs=28 if big else 24, big=big, has_star=big)
+    small_tag(page, 'walk ~23 min', Z, SPOTS['5'][0], f=0.55)
     # title banner
     r = pymupdf.Rect(20, 20, 20 + 840, 20 + 100)
     s = page.new_shape(); s.draw_rect(r, radius=0.15); s.finish(fill=NAVY, color=WHT, width=4); s.commit()
-    page.insert_text(P(44, 72), "Cheer for me!", fontname=FONT, fontsize=48, color=NSY)
-    page.insert_text(P(44, 104), "TCS Amsterdam Marathon · Sunday 18 Oct 2026", fontname=FONT, fontsize=27, color=WHT)
+    page.insert_text(P(44, 72), "Cheer for me!", **FB, fontsize=48, color=NSY)
+    page.insert_text(P(44, 104), "TCS Amsterdam Marathon · Sunday 18 Oct 2026", **FB, fontsize=27, color=WHT)
     # legend panel
-    pr = pymupdf.Rect(1180, 1800, 1790, 2355)
+    pr = pymupdf.Rect(1100, 1640, 1790, 2355)
     s = page.new_shape(); s.draw_rect(pr, radius=0.03)
-    s.finish(fill=WHT, color=NAVY, width=4, fill_opacity=0.92); s.commit()
-    page.insert_text(P(pr.x0 + 18, pr.y0 + 38), "Cheer plan - Metro & Train only", fontname=FONT, fontsize=29, color=NAVY)
-    page.insert_text(P(pr.x0 + 18, pr.y0 + 70), "(no trams / buses on race day)", fontname=FONT, fontsize=23, color=NAVY)
+    s.finish(fill=WHT, color=NAVY, width=4, fill_opacity=0.94); s.commit()
+    x0 = pr.x0 + 18
+    page.insert_text(P(x0, pr.y0 + 38), "Cheer plan · pace 8:00/km · times ≈ ±10 min", **FB, fontsize=27, color=NAVY)
+    page.insert_text(P(x0, pr.y0 + 68), "Metro & train only (no trams/buses)", **FB, fontsize=22, color=NAVY)
     items = [
-        ("1", "km 6 Beethovenstraat", "from Zuid, ~10 min walk"),
-        ("2", "km 12-14 (pick one)", "from RAI ~12-18 min walk; km 13 also ~10 min from Europaplein (M52)"),
-        ("3", "km 32 Hugo de Vrieslaan", "from Amstel, ~12 min walk. MOST IMPORTANT!"),
-        ("4", "km 37 Weesperplein", "right at the metro exit"),
-        ("5", "FINISH Olympic Stadium", "Metro 51 to Amstelveenseweg + ~10 min walk (or ~20 min from Zuid)"),
+        ("1", "~10:33 km 6 Beethovenstraat", "Be there by 10:20 (Zuid, 13 min walk). Stand on the west side.", False),
+        ("2", "~11:29 km 13 Pres. Kennedylaan (best)", "Metro/train Zuid -> RAI, walk 14 min. (km 14 ~11:37 also OK)", False),
+        (None, "Gap ~11:45-13:30: lunch near Amstel station.", "", False),
+        ("3", "~14:01 *STAR* km 32 Hugo de Vrieslaan", "Metro 51 RAI -> Amstel, walk 16 min. Be there by 13:45. MOST IMPORTANT!", True),
+        ("4", "EITHER ~14:41 km 37 Weesperplein", "Metro 51/53/54 Amstel -> Weesperplein; you'll reach the finish ~15:30, after me - meet at Meeting Point. OR go straight to the finish: Metro 51 Amstel -> Zuid + 23 min walk (there ~15:00).", False),
+        ("5", "~15:23 FINISH Olympic Stadium", "From Zuid, walk 23 min. Amstelveenseweg metro CLOSED 13:00-18:00!", False),
     ]
-    y = pr.y0 + 112
-    for n, head, sub in items:
-        bc = P(pr.x0 + 38, y + 4)
+    y = pr.y0 + 108
+    tx = pr.x0 + 68
+    for n, head, sub, hot in items:
+        if n is None:
+            page.insert_text(P(tx, y), head, **FB, fontsize=23, color=(0.35, 0.35, 0.35))
+            y += 42
+            continue
+        bc = P(pr.x0 + 38, y - 6)
         s = page.new_shape(); s.draw_circle(bc, 18); s.finish(fill=YEL, color=BLK, width=2.5); s.commit()
-        page.insert_text(P(bc.x - tlen(n, 22) / 2, bc.y + 8), n, fontname=FONT, fontsize=22, color=BLK)
-        page.insert_text(P(pr.x0 + 68, y + 2), head, fontname=FONT, fontsize=23, color=BLK)
-        rc = page.insert_textbox(pymupdf.Rect(pr.x0 + 68, y + 8, pr.x1 - 14, y + 70), sub, fontname="helv", fontsize=19, color=(0.15, 0.15, 0.15))
-        y += 66 if len(sub) < 48 else 82
-    page.insert_textbox(pymupdf.Rect(pr.x0 + 16, pr.y1 - 80, pr.x1 - 14, pr.y1 - 8),
-                        "Check GVB / 9292 app on race day - service may change. No rush: we hug at the finish!",
-                        fontname=FONT, fontsize=18, color=NAVY)
+        page.insert_text(P(bc.x - tlen(n, 22) / 2, bc.y + 8), n, **FB, fontsize=22, color=BLK)
+        if "*STAR*" in head:
+            a, b = head.split("*STAR*")
+            page.insert_text(P(tx, y), a, **FB, fontsize=26, color=RED)
+            sx = tx + tlen(a, 26)
+            star(page, (sx + 14, y - 9), 15, fill=YEL, width=2)
+            page.insert_text(P(sx + 32, y), b.strip(), **FB, fontsize=26, color=RED)
+        else:
+            page.insert_text(P(tx, y), head, **FB, fontsize=26, color=BLK)
+        yy = y + 29
+        for ln in wrap(sub, 22, pr.x1 - 14 - tx):
+            page.insert_text(P(tx, yy), ln, **FR, fontsize=22, color=(0.15, 0.15, 0.15))
+            yy += 26
+        y = yy + 18
+    page.insert_text(P(x0, pr.y1 - 20), "Check GVB / 9292 on race day. No rush - we hug at the finish!", **FB, fontsize=20, color=NAVY)
+    print("panel content ends at", y, "limit", pr.y1 - 40)
 
 
 PLAN = [
-    ("1", "km 6 - Beethovenstraat", "Metro to ZUID (lines 50 / 51 / 52, or train). Walk ~10 min to Beethovenstraat."),
-    ("2", "km 12-14 - pick one", "Metro 50 / 51 from Zuid to RAI (or train). Walk ~12-18 min to Rijnstraat (km 12), Pres. Kennedylaan (km 13) or Amsteldijk (km 14). km 13 is also ~10 min from EUROPAPLEIN (metro 52)."),
-    ("3", "km 32 - Hugo de Vrieslaan  (MOST IMPORTANT)", "Metro 51 from RAI to AMSTEL (or train). Walk ~12 min to Hugo de Vrieslaan."),
-    ("4", "km 37 - Weesperplein", "Metro 51 / 53 / 54 from Amstel to WEESPERPLEIN. The spot is right at the metro exit."),
-    ("5", "FINISH - Olympic Stadium", "Metro 51 from Weesperplein to AMSTELVEENSEWEG, then ~10 min walk to the Olympic Stadium. (From Zuid it is ~20 min on foot.) Hug!"),
+    ("~10:33", "km 6 - Beethovenstraat", "Metro/train to ZUID, be there by 10:20. Stand on the west side.", "km 6 -> Zuid 13 min"),
+    ("~11:29", "km 13 - Pres. Kennedylaan (best; km 14 ~11:37 also OK)", "Metro/train Zuid -> RAI.", "RAI -> km 13: 14 min"),
+    ("11:45-13:30", "Lunch near Amstel station", "Rest and eat. Metro 51 RAI -> Amstel.", "-"),
+    ("~14:01", "km 32 - Hugo de Vrieslaan (MOST IMPORTANT)", "Metro 51 RAI -> Amstel. Be there by 13:45.", "Amstel -> km 32: 16 min"),
+    ("~14:41", "km 37 - Weesperplein (optional)", "Metro 51/53/54 Amstel -> Weesperplein. You reach the finish ~15:30, after me - meet at the Meeting Point.", "~3 min from metro"),
+    ("~15:23", "FINISH - Olympic Stadium", "Metro 51 Weesperplein or Amstel -> Zuid (there ~15:00 if you skip km 37).", "Zuid -> finish: 23 min"),
 ]
 
 
 def plan_page(doc, size):
     page = doc.new_page(width=595, height=842)
     W = 595
-    s = page.new_shape(); s.draw_rect(pymupdf.Rect(0, 0, W, 110)); s.finish(fill=NAVY, color=NAVY); s.commit()
-    page.insert_text(P(36, 56), "Supporter plan", fontname=FONT, fontsize=34, color=NSY)
-    page.insert_text(P(36, 86), "TCS Amsterdam Marathon - Sunday 18 Oct 2026", fontname=FONT, fontsize=16, color=WHT)
-    s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, 126, W - 36, 196), radius=0.12)
-    s.finish(fill=(1, 0.95, 0.75), color=BLK, width=1.5); s.commit()
-    page.insert_textbox(pymupdf.Rect(48, 132, W - 48, 194),
-                        "Trams and buses are cancelled on race day. Use METRO and TRAIN only. "
-                        "Check the GVB / 9292 app - service may change.", fontname=FONT, fontsize=14, color=BLK)
-    y = 222
-    for n, head, body in PLAN:
-        s = page.new_shape(); s.draw_circle(P(58, y + 14), 17); s.finish(fill=YEL, color=BLK, width=2); s.commit()
-        page.insert_text(P(58 - tlen(n, 20) / 2, y + 21), n, fontname=FONT, fontsize=20, color=BLK)
-        page.insert_text(P(90, y + 12), head, fontname=FONT, fontsize=16, color=NAVY)
-        rc = page.insert_textbox(pymupdf.Rect(90, y + 20, W - 36, y + 110), body, fontname="helv", fontsize=13, color=BLK)
-        y += 108 if len(body) > 150 else 88
-    s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, 750, W - 36, 810), radius=0.15)
+    s = page.new_shape(); s.draw_rect(pymupdf.Rect(0, 0, W, 100)); s.finish(fill=NAVY, color=NAVY); s.commit()
+    page.insert_text(P(36, 52), "Supporter plan", **FB, fontsize=34, color=NSY)
+    page.insert_text(P(36, 80), "TCS Amsterdam Marathon - Sunday 18 Oct 2026 - pace 8:00/km, start 09:45", **FB, fontsize=14, color=WHT)
+    # table
+    cols = [36, 104, 262, 462]  # time | where | how | walk
+    heads = ["Time", "Where", "How to get there", "Walk"]
+    y = 116
+    s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, y, W - 36, y + 24)); s.finish(fill=NAVY, color=NAVY); s.commit()
+    for cx, h in zip(cols, heads):
+        page.insert_text(P(cx + 5, y + 17), h, **FB, fontsize=12, color=WHT)
+    y += 24
+    ends = cols[1:] + [W - 36]
+    for k, (t, where, how, walk) in enumerate(PLAN):
+        cells = [t, where, how, walk]
+        fs = 11
+        wrapped = [wrap(c, fs, ends[i] - cols[i] - 10, bold=(i < 2)) for i, c in enumerate(cells)]
+        h = max(len(w) for w in wrapped) * 14 + 12
+        s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, y, W - 36, y + h))
+        s.finish(fill=(1, 0.97, 0.85) if k == 3 else ((0.95, 0.95, 0.95) if k % 2 else WHT), color=(0.7, 0.7, 0.7), width=0.6); s.commit()
+        for i, w in enumerate(wrapped):
+            for li, ln in enumerate(w):
+                page.insert_text(P(cols[i] + 5, y + 16 + li * 14), ln, **(FB if i < 2 else FR), fontsize=fs,
+                                 color=NAVY if i == 1 else BLK)
+        y += h
+    y += 16
+    # important box
+    bh = 165
+    s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, y, W - 36, y + bh), radius=0.04)
+    s.finish(fill=(1, 0.93, 0.93), color=RED, width=2); s.commit()
+    page.insert_text(P(50, y + 24), "Important", **FB, fontsize=16, color=RED)
+    bullets = [
+        "Metro station Amstelveenseweg is CLOSED Sunday 13:00-18:00. Walk between Zuid station and the Olympic Stadium (~1.9 km, ~23 min).",
+        "The half marathon (start 13:20) runs on the same roads around km 32-37. Look carefully, it will be busy there.",
+        "Trams and buses are limited. Use metro and train; check GVB / 9292 on race day.",
+        "Times assume 8:00/km and a 09:45 start. Adjust by about +/- 10 min.",
+    ]
+    yy = y + 46
+    for b in bullets:
+        ls = wrap(b, 12, W - 36 - 50 - 30)
+        page.insert_text(P(52, yy), "-", **FB, fontsize=12, color=RED)
+        for ln in ls:
+            page.insert_text(P(66, yy), ln, **FR, fontsize=12, color=BLK)
+            yy += 16
+        yy += 8
+    y = max(yy, y + 100) + 10
+    s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, 770, W - 36, 815), radius=0.15)
     s.finish(fill=NAVY, color=NAVY); s.commit()
-    page.insert_textbox(pymupdf.Rect(48, 758, W - 48, 808),
+    page.insert_textbox(pymupdf.Rect(48, 780, W - 48, 812),
                         "No rush - we hug at the finish! Spot 3 (km 32) is the most important one.",
-                        fontname=FONT, fontsize=15, color=WHT, align=1)
+                        **FB, fontsize=14, color=WHT, align=1)
+    print("plan page content bottom", yy, "box", y, "(box top + bh) =", y)
 
 
 def main():

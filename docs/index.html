@@ -48,7 +48,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .card{border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
 .card label{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
-.row>div{flex:1;min-width:130px}
+.row>div{flex:1;min-width:104px}
 input[type=text],input[type=time]{width:100%;min-height:46px;font-size:18px;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-family:inherit}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:8px 14px;border-radius:10px;border:2px solid #111;background:var(--accent);color:#111;font:700 15px inherit;font-family:inherit;cursor:pointer;text-decoration:none}
 .btn.block{display:flex;width:100%;margin-top:8px}
@@ -69,12 +69,23 @@ li.star .n{width:38px;height:38px;font-size:18px}
 .foot a{color:var(--link);font-weight:700}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;align-items:center;margin:8px 0}
 
+.by{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:0 7px;font-weight:700;font-size:12px;white-space:nowrap}
+.tag{display:inline-block;background:#1a8f3c;color:#fff;border-radius:6px;padding:0 6px;font-weight:900;font-size:11px;letter-spacing:.5px;vertical-align:middle}
+.tag.warn{background:#b26a00}
+ol.steps>li.brk{border:1px dashed var(--line);padding:8px 12px;cursor:default;min-height:0;font-size:14px;color:var(--muted)}
+.closedwarn{color:#c00;font-weight:800}
+
 /* map icons */
 .spot{width:100%;height:100%;border-radius:50%;background:#FFD400;border:4px solid #000;color:#000;font:900 16px/1 -apple-system,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .spot.big{font-size:22px;border-width:5px;position:relative;overflow:visible}
 .spot.big::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:4px solid #FFD400;animation:pulse 1.6s ease-out infinite}
 @keyframes pulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.8);opacity:0}}
 .spot.fin{border-radius:12px}
+.spot.best{position:relative;overflow:visible}
+.besttag{position:absolute;top:-12px;right:-20px;background:#1a8f3c;color:#fff;border:2px solid #fff;border-radius:6px;font:900 10px/1 Arial,sans-serif;padding:2px 4px;letter-spacing:.5px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.mbadge.x{background:#777;border-color:#c00;color:#ddd;text-decoration:line-through}
+.leaflet-tooltip.stl.closed{background:#fff0f0;color:#b00000;border-color:#c00}
+.leaflet-tooltip.stl.closed s{color:#777}
 .stn{display:flex;gap:2px;align-items:center}
 .mbadge{width:28px;height:28px;background:#0066CC;color:#fff;border:2px solid #fff;font:900 16px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:4px;box-shadow:0 1px 5px rgba(0,0,0,.6)}
 .tbadge{height:28px;padding:0 6px;background:#003082;color:#FFC917;border:2px solid #fff;font:900 13px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 1px 5px rgba(0,0,0,.6);letter-spacing:.5px}
@@ -111,7 +122,7 @@ li.star .n{width:38px;height:38px;font-size:18px}
   <div id="main">
     <div class="mapbox" id="box-street">
       <div id="street"></div>
-      <div id="notice">🚇 Metro &amp; 🚆 train only — trams &amp; buses cancelled</div>
+      <div id="notice">🚇 Metro &amp; 🚆 train only — trams &amp; buses cancelled<br>⛔ Amstelveenseweg metro closed 13:00–18:00</div>
       <button id="locbtn" aria-label="Where am I" title="Where am I">📍</button>
       <div id="maphint">Red race route: see Course map tab. Spot positions approx.</div>
     </div>
@@ -124,16 +135,17 @@ li.star .n{width:38px;height:38px;font-size:18px}
     <button id="handle" aria-expanded="false">
       <span class="t">Cheer for me! 🏃 TCS Amsterdam Marathon · Sun 18 Oct 2026</span>
       <span class="s" id="handlehint">Tap to open the plan &amp; ETAs</span>
-      <span class="banner">🚇 Metro &amp; 🚆 train only — trams &amp; buses are cancelled</span>
+      <span class="banner">🚇 Metro &amp; 🚆 train only — trams &amp; buses are cancelled<br>⛔ Amstelveenseweg metro closed 13:00–18:00</span>
     </button>
     <div id="sheetbody">
       <div class="card">
         <div class="row">
-          <div><label for="start">My start wave time</label><input id="start" type="time" value="09:30"></div>
-          <div><label for="goal">Goal finish time (h:mm[:ss])</label><input id="goal" type="text" inputmode="numeric" autocomplete="off" value="4:00:00" placeholder="4:00:00"></div>
+          <div><label for="start">My start time</label><input id="start" type="time" value="09:45"></div>
+          <div><label for="pace">Pace (min/km)</label><input id="pace" type="text" inputmode="numeric" autocomplete="off" value="8:00" placeholder="8:00"></div>
+          <div><label for="goal">Goal finish (h:mm[:ss])</label><input id="goal" type="text" inputmode="numeric" autocomplete="off" value="5:37:34" placeholder="5:37:34"></div>
         </div>
         <div class="err" id="inputerr" role="alert"></div>
-        <div class="small">ETAs assume even pace. Add a few minutes of buffer!</div>
+        <div class="small">ETAs assume even pace, ≈ ±10 min. Add a few minutes of buffer! Pace and goal time update each other.</div>
         <button class="btn block" id="copy">🔗 Copy link with my times</button>
       </div>
 
@@ -145,34 +157,38 @@ li.star .n{width:38px;height:38px;font-size:18px}
 
       <ol class="steps">
         <li data-spot="1"><span class="n">1</span>
-          <b>km 6 · Beethovenstraat</b> <span class="eta" data-km="6"></span><br>
-          Walk ~10 min from Zuid. Then back to Zuid → Metro 50/51 or train, 1 stop → RAI.</li>
+          <b>km 6 · Beethovenstraat</b> <span class="eta" data-km="6"></span> <span class="by" data-km="6" data-off="-13" data-pre="be there by "></span><br>
+          Zuid (metro/train) + 13 min walk. Stand on the <b>west side</b> of Beethovenstraat so you can walk back to Zuid without crossing the course. Then walk back to Zuid → Metro 50/51 or train, 1 stop → RAI.</li>
         <li data-spot="2b"><span class="n">2</span>
-          <b>km 12–14 (pick one)</b><br>
-          Walk from RAI (or Europaplein, M52, for km 13). Then back to RAI → Metro 51 direct to Amstel (~6 min).
+          <b>km 13 President Kennedylaan</b> <span class="tag">BEST</span> (recommended) <b>or km 14 Amsteldijk</b> <span class="by" data-km="13" data-off="-13" data-pre="be there by "></span><br>
+          14 min walk from RAI. km 12 only if you skipped km 6. Then back to RAI → Metro 51 to Amstel (~6 min).
           <div class="chips">
-            <button class="chip" data-spot="2a">km 12 Rijnstraat <span class="eta" data-km="12"></span></button>
-            <button class="chip" data-spot="2b">km 13 MLK park <span class="eta" data-km="13"></span></button>
+            <button class="chip" data-spot="2a">km 12 (only if early) <span class="eta" data-km="12"></span></button>
+            <button class="chip" data-spot="2b">km 13 ★ best <span class="eta" data-km="13"></span></button>
             <button class="chip" data-spot="2c">km 14 Amsteldijk <span class="eta" data-km="14"></span></button>
           </div></li>
+        <li class="brk">☕ Break ~<span data-km="14" data-off="10"></span>–<span data-km="32" data-off="-30"></span> — lunch near Amstel station</li>
         <li class="star" data-spot="3"><span class="n">★</span>
-          <b>km 32 · Hugo de Vrieslaan / Gooiseweg</b> <span class="eta" data-km="32"></span><br>
-          <b>Most critical point — I'll need the most mental support!</b> Walk ~12 min from Amstel. Leave right after you see me.</li>
+          <b>km 32 · Hugo de Vrieslaan</b> <span class="eta" data-km="32"></span> <span class="by" data-km="32" data-off="-15" data-pre="be there by "></span><br>
+          <b>Most critical point — I'll need the most mental support!</b> 16 min walk from Amstel. Be there ~15 min early. Half-marathon runners are on this road too, look carefully.</li>
         <li data-spot="4"><span class="n">4</span>
-          <b>Depending on time &amp; crowds</b> <span class="eta" data-km="37"></span>
-          <div class="opt"><b>EITHER</b> Metro 51/53/54 Amstel → Weesperplein (2 stops) to see me at km 37 (right by the exit), then Metro 51 Weesperplein → Amstelveenseweg (direct, via Amstel &amp; Zuid) + ~10 min walk to the finish.</div>
-          <div class="opt"><b>OR</b> skip km 37 and go straight to the finish: Metro 51 Amstel → Amstelveenseweg (or to Zuid + ~20 min walk).</div></li>
+          <b>Choose</b>
+          <div class="opt"><b>A) km 37 Weesperplein</b> <span class="eta" data-km="37"></span> — Metro 51/53/54 Amstel → Weesperplein (2 stops), 3 min walk. Busy: half-marathon runners pass here too, look carefully! You'll then reach the stadium ~45 min after my km 37 time (≈ after I finish) → meet me at the Meeting Point. Arrive ≈ <b data-km="37" data-off="49"></b></div>
+          <div class="opt"><b>B) Straight to the finish</b> to see me cross the line: Metro 51 Amstel → Zuid (~9 min) + 23 min walk. Arrive ≈ <b data-km="32" data-off="58"></b></div></li>
         <li data-spot="5"><span class="n">🏁</span>
           <b>Finish · Olympic Stadium</b> <span class="eta" data-km="42.195"></span><br>
+          From Zuid ~23 min walk. <span class="closedwarn">⚠️ Amstelveenseweg metro closed 13:00–18:00.</span><br>
           No rush, no matter what — we hug at the finish!</li>
       </ol>
 
       <div class="foot">
         <b>Most critical points: 30 km+ and the 42 km finish.</b> Check the GVB / 9292 app on race day — metro frequency &amp; exits may change.
+        <div style="margin-top:6px">Half-marathon runners (start 13:20) share the road around km 32–37 — look carefully.</div>
         <div class="row" style="margin-top:8px">
           <div><a class="btn block alt" href="assets/support-map.pdf" download>📄 Download PDF</a></div>
           <div><a class="btn block alt" href="assets/support-map.jpg" target="_blank" rel="noopener">🖼️ Course map JPG</a></div>
         </div>
+        <div class="small" style="margin-top:10px">Sources: official course &amp; travel advice — <a href="https://www.tcsamsterdammarathon.eu/travel-advice-race-day" target="_blank" rel="noopener">tcsamsterdammarathon.eu</a></div>
       </div>
     </div>
   </section>
@@ -190,13 +206,13 @@ function gmDir(lat,lon){return 'https://www.google.com/maps/dir/?api=1&destinati
 
 /* ---------- data ---------- */
 var SPOTS = {
-  '1': {id:'1',label:'1',km:6,title:'km 6 · Beethovenstraat',sub:'just south of Stadionweg',lat:52.3461,lon:4.87655,near:'Zuid (Metro 50 · 51 · 52 + train)',walk:'~10 min walk from Zuid',pdf:[526,936]},
-  '2a':{id:'2a',label:'2a',km:12,title:'km 12 · Rijnstraat',lat:52.3448,lon:4.90655,near:'RAI (Metro 50 · 51 + train)',walk:'~18 min walk from RAI',pick:true,pdf:[1020.5,978]},
-  '2b':{id:'2b',label:'2b',km:13,title:'km 13 · President Kennedylaan / Martin Luther Kingpark',lat:52.33897,lon:4.90293,near:'Europaplein (Metro 52) or RAI (Metro 50 · 51)',walk:'~10 min from Europaplein or ~12 min from RAI',pick:true,pdf:[953,1136]},
-  '2c':{id:'2c',label:'2c',km:14,title:'km 14 · Amsteldijk (by Zorgvlied)',lat:52.33383,lon:4.90249,near:'RAI (Metro 50 · 51 + train)',walk:'~12 min walk from RAI',pick:true,pdf:[939,1276]},
-  '3': {id:'3',label:'★',km:32,title:'★ km 32 · Hugo de Vrieslaan / Gooiseweg',lat:52.34729,lon:4.93178,near:'Amstel (Metro 51 · 53 · 54 + train)',walk:'~12 min walk from Amstel',big:true,note:'MOST IMPORTANT: this is where I\'ll need the most mental support 🙂',pdf:[1441,915.5]},
-  '4': {id:'4',label:'4',km:37,title:'km 37 · Weesperplein',lat:52.35964,lon:4.90686,near:'Weesperplein (Metro 51 · 53 · 54)',walk:'right by the Weesperplein metro exit',pdf:[1045,573.5]},
-  '5': {id:'5',label:'🏁',km:42.195,title:'FINISH km 42 · Olympic Stadium',lat:52.34321,lon:4.85405,near:'Amstelveenseweg (Metro 50 · 51), or Zuid + ~20 min walk',walk:'~10 min walk from Amstelveenseweg',fin:true,note:'No rush, no matter what — we hug at the finish!',pdf:[150,1010]}
+  '1': {id:'1',label:'1',km:6,title:'km 6 · Beethovenstraat',sub:'just south of Stadionweg',lat:52.3461,lon:4.87655,near:'Zuid (Metro 50 · 51 · 52 + train)',walk:'~13 min walk from Zuid',note2:'Stand on the west side of Beethovenstraat so you can walk back to Zuid without crossing the course.',pdf:[526,936]},
+  '2a':{id:'2a',label:'2a',km:12,title:'km 12 · Rijnstraat',lat:52.3448,lon:4.90655,near:'RAI (Metro 50 · 51 + train)',walk:'~22 min walk from RAI',pick:true,warn:'Only if you\'re early — 22 min walk from RAI, too tight after km 6.',pdf:[1020.5,978]},
+  '2b':{id:'2b',label:'2b',km:13,title:'km 13 · President Kennedylaan / Martin Luther Kingpark',lat:52.33897,lon:4.90293,near:'Europaplein (Metro 52) or RAI (Metro 50 · 51)',walk:'~12 min from Europaplein or ~14 min from RAI',pick:true,best:true,pdf:[953,1136]},
+  '2c':{id:'2c',label:'2c',km:14,title:'km 14 · Amsteldijk (by Zorgvlied)',lat:52.33383,lon:4.90249,near:'RAI (Metro 50 · 51 + train)',walk:'~14 min walk from RAI',pick:true,pdf:[939,1276]},
+  '3': {id:'3',label:'★',km:32,title:'★ km 32 · Hugo de Vrieslaan / Gooiseweg',lat:52.34729,lon:4.93178,near:'Amstel (Metro 51 · 53 · 54 + train)',walk:'~16 min walk from Amstel',big:true,note:'MOST IMPORTANT: this is where I\'ll need the most mental support 🙂',note2:'Pedestrian crossing point at Hugo de Vrieslaan/Middenweg.',early:15,pdf:[1441,915.5]},
+  '4': {id:'4',label:'4',km:37,title:'km 37 · Weesperplein',lat:52.35964,lon:4.90686,near:'Weesperplein (Metro 51 · 53 · 54)',walk:'~3 min walk from Weesperplein metro',note2:'Busy: half-marathon runners also pass here — look carefully!',pdf:[1045,573.5]},
+  '5': {id:'5',label:'🏁',km:42.195,title:'FINISH km 42 · Olympic Stadium',lat:52.34321,lon:4.85405,near:'Zuid (Metro 50 · 51 · 52 + train)',walk:'from Zuid, ~23 min walk (Amstelveenseweg metro closed 13:00–18:00)',fin:true,note:'No rush, no matter what — we hug at the finish!',pdf:[150,1010]}
 };
 var SPOT_ORDER=['1','2a','2b','2c','3','4','5'];
 var STATIONS = [
@@ -205,7 +221,7 @@ var STATIONS = [
   {n:'Europaplein',lat:52.3420,lon:4.8925,metro:'Metro 52',train:false,dir:'top'},
   {n:'Amstel',lat:52.3465,lon:4.9176,metro:'Metro 51 · 53 · 54',train:true,dir:'bottom'},
   {n:'Weesperplein',lat:52.3614,lon:4.9074,metro:'Metro 51 · 53 · 54',train:false,dir:'right'},
-  {n:'Amstelveenseweg',lat:52.3378,lon:4.8573,metro:'Metro 50 · 51',train:false,dir:'bottom',extra:'closest to finish'}
+  {n:'Amstelveenseweg',lat:52.3378,lon:4.8573,metro:'Metro 50 · 51',train:false,dir:'bottom',closed:true}
 ];
 function st(n){for(var i=0;i<STATIONS.length;i++)if(STATIONS[i].n===n)return STATIONS[i];}
 
@@ -213,13 +229,18 @@ function popupHtml(s){
   var h='<h3>'+esc(s.title)+'</h3>';
   if(s.sub)h+='<div>'+esc(s.sub)+'</div>';
   h+='<div><b>Nearest station:</b> '+esc(s.near)+'</div><div><b>Walk:</b> '+esc(s.walk)+'</div>';
+  if(s.best)h+='<div style="margin-top:4px"><span class="tag">BEST</span> <b>Recommended</b></div>';
+  if(s.warn)h+='<div style="margin-top:4px;color:#b26a00"><b>'+esc(s.warn)+'</b></div>';
   if(s.pick)h+='<div><i>2a–2c: pick one depending on time/crowds</i></div>';
+  if(s.early){var by=etaClock(s.km,-s.early);if(by)h+='<div style="margin-top:4px"><b>Be there by ~'+esc(by)+'.</b></div>';}
+  if(s.note2)h+='<div style="margin-top:4px">'+esc(s.note2)+'</div>';
   if(s.note)h+='<div style="margin-top:4px"><b>'+esc(s.note)+'</b></div>';
   h+='<div style="color:#666;font-size:12px;margin-top:4px">Location approx. (±100 m)</div>';
   h+='<a class="pbtn" target="_blank" rel="noopener" href="'+gmDir(s.lat,s.lon)+'">🚶 Walk here (Google Maps)</a>';
   return h;
 }
 function stationPopup(s){
+  if(s.closed)return '<h3><s>'+esc(s.n)+'</s> — CLOSED</h3><div class="closedwarn">Metro station closed Sunday 13:00–18:00 — no metro stops here.</div><div style="margin-top:4px">Use <b>Zuid</b> instead (Metro 50 · 51 · 52 + train) and walk ~23 min to the Olympic Stadium.</div>';
   var h='<h3>'+esc(s.n)+'</h3><div>'+esc(s.metro)+(s.train?' + Train':'')+'</div>';
   if(s.extra)h+='<div>'+esc(s.extra)+'</div>';
   h+='<a class="pbtn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'&travelmode=transit">🚇 Open in Google Maps</a>';
@@ -233,10 +254,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,att
 var streetMarkers={};
 var bounds=[];
 STATIONS.forEach(function(s){
-  var html='<div class="stn"><div class="mbadge">M</div>'+(s.train?'<div class="tbadge">NS</div>':'')+'</div>';
+  var html='<div class="stn"><div class="mbadge'+(s.closed?' x':'')+'">'+(s.closed?'✕':'M')+'</div>'+(s.train?'<div class="tbadge">NS</div>':'')+'</div>';
   var w=s.train?64:32;
   var m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:'',html:html,iconSize:[w,28],iconAnchor:[w/2,14]}),zIndexOffset:500,title:s.n});
-  m.bindTooltip('<b>'+esc(s.n)+'</b><small>'+esc(s.metro)+(s.train?' + 🚆':'')+'</small>',{permanent:true,direction:s.dir,className:'stl',offset:s.dir==='left'?[-10,0]:s.dir==='right'?[10,0]:s.dir==='top'?[0,-12]:[0,12]});
+  var tip=s.closed?'<b><s>'+esc(s.n)+'</s> — CLOSED 13:00–18:00</b>':'<b>'+esc(s.n)+'</b><small>'+esc(s.metro)+(s.train?' + 🚆':'')+'</small>';
+  m.bindTooltip(tip,{permanent:true,direction:s.dir,className:'stl'+(s.closed?' closed':''),offset:s.dir==='left'?[-10,0]:s.dir==='right'?[10,0]:s.dir==='top'?[0,-12]:[0,12]});
   m.bindPopup(stationPopup(s));
   m.addTo(street);bounds.push([s.lat,s.lon]);
 });
@@ -246,17 +268,20 @@ var metroStyle={color:'#0066CC',weight:5,dashArray:'14 8',opacity:.9};
 function walk(a,b){L.polyline([[a.lat,a.lon],[b.lat,b.lon]],walkStyle).addTo(street);}
 walk(st('Zuid'),SPOTS['1']);walk(st('RAI'),SPOTS['2a']);walk(st('RAI'),SPOTS['2c']);walk(st('Europaplein'),SPOTS['2b']);
 walk(st('RAI'),SPOTS['2b']);
-walk(st('Amstel'),SPOTS['3']);walk(st('Weesperplein'),SPOTS['4']);walk(st('Amstelveenseweg'),SPOTS['5']);
-[['Zuid','RAI','Metro 50/51'],['RAI','Amstel','Metro 51'],['Amstel','Weesperplein','Metro 51/53/54'],['Weesperplein','Amstelveenseweg','Metro 51']].forEach(function(h){
+walk(st('Amstel'),SPOTS['3']);walk(st('Weesperplein'),SPOTS['4']);walk(st('Zuid'),SPOTS['5']);
+[['Zuid','RAI','Metro 50/51'],['RAI','Amstel','Metro 51'],['Amstel','Weesperplein','Metro 51/53/54'],['Weesperplein','Zuid','Metro 51 · ~13 min',0],['Amstel','Zuid','Metro 51 · ~9 min',0.006]].forEach(function(h){
   var a=st(h[0]),b=st(h[1]);
-  var l=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],metroStyle).addTo(street);
+  var pts=[[a.lat,a.lon]];
+  if(h[3])pts.push([(a.lat+b.lat)/2+h[3],(a.lon+b.lon)/2]);
+  pts.push([b.lat,b.lon]);
+  var l=L.polyline(pts,metroStyle).addTo(street);
   l.bindTooltip(h[2],{permanent:true,direction:'center',className:'lbl'});
 });
 
 SPOT_ORDER.forEach(function(id){
   var s=SPOTS[id];var sz=s.big?54:42;
-  var m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:'',html:'<div class="spot'+(s.big?' big':'')+(s.fin?' fin':'')+'">'+s.label+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),zIndexOffset:s.big?1200:1000,title:s.title});
-  m.bindPopup(popupHtml(s),{maxWidth:280});
+  var m=L.marker([s.lat,s.lon],{icon:L.divIcon({className:'',html:'<div class="spot'+(s.big?' big':'')+(s.fin?' fin':'')+(s.best?' best':'')+'">'+s.label+(s.best?'<span class="besttag">BEST</span>':'')+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),zIndexOffset:s.big?1200:1000,title:s.title});
+  m.bindPopup(function(){return popupHtml(s);},{maxWidth:280});
   m.addTo(street);streetMarkers[id]=m;bounds.push([s.lat,s.lon]);
 });
 street.fitBounds(bounds,{padding:[30,30],maxZoom:14});
@@ -298,7 +323,7 @@ function initCourse(){
       var s=SPOTS[id];
       var ll=[H-s.pdf[1]*1.5,s.pdf[0]*1.5];
       var c=L.circle(ll,{radius:34,color:'#000',weight:2,fillColor:'#FFD400',fillOpacity:.18,opacity:.45,className:'hot'}).addTo(course);
-      c.bindPopup(popupHtml(s),{maxWidth:280});
+      c.bindPopup(function(){return popupHtml(s);},{maxWidth:280});
       courseHot[id]=c;
     });
     courseReady=true;
@@ -360,39 +385,53 @@ document.querySelectorAll('[data-spot]').forEach(function(el){
 });
 
 /* ---------- ETA ---------- */
-var LS='cheermap.v1';
+var LS='cheermap.v2';
+var KM_TOTAL=42.195;
 function parseStart(s){var m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim());if(!m)return null;var h=+m[1],mi=+m[2];if(h>23||mi>59)return null;return h*3600+mi*60;}
 function parseGoal(s){var m=/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec((s||'').trim());if(!m)return null;var h=+m[1],mi=+m[2],se=m[3]?+m[3]:0;if(mi>59||se>59)return null;var t=h*3600+mi*60+se;return t>0?t:null;}
-function fmtClock(sec){sec=Math.round(sec/60)*60;var h=Math.floor(sec/3600)%24,m=Math.floor(sec%3600/60);return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
-function update(save){
+function parsePace(s){var m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim());if(!m)return null;var mi=+m[1],se=+m[2];if(se>59)return null;var t=mi*60+se;return t>=120&&t<=1200?t:null;}
+function p2(n){return (n<10?'0':'')+n;}
+function fmtHMS(sec){sec=Math.round(sec);return Math.floor(sec/3600)+':'+p2(Math.floor(sec%3600/60))+':'+p2(sec%60);}
+function fmtPace(sec){sec=Math.round(sec);return Math.floor(sec/60)+':'+p2(sec%60);}
+function fmtClock(sec){sec=Math.round(sec/60)*60;sec=((sec%86400)+86400)%86400;var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return p2(h)+':'+p2(m);}
+function etaClock(km,offMin){
   var s=parseStart($('start').value),g=parseGoal($('goal').value);
-  var e=[];if(s===null)e.push('Start time should look like 09:30');if(g===null)e.push('Goal should look like 3:45 or 4:00:00');
+  if(s===null||g===null)return null;
+  return fmtClock(s+g*km/KM_TOTAL+(offMin||0)*60);
+}
+function update(save){
+  var s=parseStart($('start').value),g=parseGoal($('goal').value),pc=parsePace($('pace').value);
+  var e=[];if(s===null)e.push('Start time should look like 09:45');if(pc===null)e.push('Pace should look like 8:00 (min:sec per km)');if(g===null)e.push('Goal should look like 5:37:34');
   $('inputerr').textContent=e.join(' · ');
-  document.querySelectorAll('.eta').forEach(function(el){
+  document.querySelectorAll('[data-km]').forEach(function(el){
     if(s===null||g===null){el.textContent='';el.style.display='none';return;}
-    var km=parseFloat(el.getAttribute('data-km'));
-    el.textContent='~'+fmtClock(s+g*km/42.195);el.style.display='';
+    var km=parseFloat(el.getAttribute('data-km')),off=parseFloat(el.getAttribute('data-off')||'0');
+    el.textContent=(el.getAttribute('data-pre')||'')+'~'+fmtClock(s+g*km/KM_TOTAL+off*60);el.style.display='';
   });
-  if(save&&s!==null&&g!==null){
-    var q=new URLSearchParams(location.search);q.set('start',$('start').value.trim());q.set('goal',$('goal').value.trim());
+  if(save&&s!==null&&g!==null&&pc!==null){
+    var q=new URLSearchParams(location.search);q.set('start',$('start').value.trim());q.set('pace',$('pace').value.trim());q.delete('goal');
     try{history.replaceState(null,'','?'+q.toString()+location.hash);}catch(_){}
-    try{localStorage.setItem(LS,JSON.stringify({start:$('start').value.trim(),goal:$('goal').value.trim()}));}catch(_){}
+    try{localStorage.setItem(LS,JSON.stringify({start:$('start').value.trim(),pace:$('pace').value.trim()}));}catch(_){}
   }
 }
+function paceToGoal(){var p=parsePace($('pace').value);if(p!==null)$('goal').value=fmtHMS(p*KM_TOTAL);}
+function goalToPace(){var g=parseGoal($('goal').value);if(g!==null){var p=Math.round(g/KM_TOTAL);if(p>0)$('pace').value=fmtPace(p);}}
 (function init(){
-  var q=new URLSearchParams(location.search),st0=q.get('start'),g0=q.get('goal');
-  if(st0===null||g0===null){
-    try{var o=JSON.parse(localStorage.getItem(LS)||'null');if(o){if(st0===null)st0=o.start;if(g0===null)g0=o.goal;}}catch(_){}
+  var q=new URLSearchParams(location.search),st0=q.get('start'),pc0=q.get('pace'),g0=q.get('goal');
+  if(st0===null&&pc0===null&&g0===null){
+    try{var o=JSON.parse(localStorage.getItem(LS)||'null');if(o){st0=o.start;pc0=o.pace;}}catch(_){}
   }
-  if(st0&&parseStart(st0)!==null){var p=parseStart(st0);$('start').value=fmtClock(p);}
-  if(g0&&parseGoal(g0)!==null)$('goal').value=String(g0).trim();
+  if(st0&&parseStart(st0)!==null)$('start').value=fmtClock(parseStart(st0));
+  if(pc0&&parsePace(pc0)!==null){$('pace').value=String(pc0).trim();paceToGoal();}
+  else if(g0&&parseGoal(g0)!==null){$('goal').value=String(g0).trim();goalToPace();}
   update(false);
 })();
 $('start').addEventListener('input',function(){update(true);});
-$('goal').addEventListener('input',function(){update(true);});
+$('pace').addEventListener('input',function(){paceToGoal();update(true);});
+$('goal').addEventListener('input',function(){goalToPace();update(true);});
 $('copy').addEventListener('click',function(){
   update(true);
-  var q=new URLSearchParams();q.set('start',$('start').value.trim());q.set('goal',$('goal').value.trim());
+  var q=new URLSearchParams();q.set('start',$('start').value.trim());q.set('pace',$('pace').value.trim());
   var url=location.origin+location.pathname+'?'+q.toString();
   function fallback(){
     var ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,99999);
