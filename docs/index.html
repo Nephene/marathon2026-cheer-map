@@ -578,6 +578,7 @@ function refreshLabels(){
   Object.keys(spotMarkers).forEach(function(id){var t=spotMarkers[id].getTooltip();if(t)t.setOpacity(!low||id===s.spot?1:0);});
   var ft=spotMarkers.finish&&spotMarkers.finish.getTooltip();
   if(ft){ft.options.direction=low?'top':'right';ft.options.offset=low?L.point(22,-3):L.point(41,22);ft.update();}
+  s.legs.forEach(function(id){var lg=LEGS[id];if(lg)lg.tip.setOpacity(street.getZoom()<14?0:1);});
   placeLegTips(s);
 }
 function rectGap(a,b){var dx=Math.max(a.l-b.r,b.l-a.r),dy=Math.max(a.t-b.b,b.t-a.b);return Math.max(dx,dy);}
