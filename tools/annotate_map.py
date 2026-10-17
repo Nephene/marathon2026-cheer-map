@@ -95,7 +95,7 @@ def label(page, tail, d, text, num, fs=24, big=False, has_star=False):
     s.draw_circle(bc, nb / 2)
     s.finish(fill=BLK, color=BLK)
     s.commit()
-    nfs = fs * 0.95
+    nfs = fs * 0.95 if len(num) == 1 else fs * 0.62
     page.insert_text(P(bc.x - tlen(num, nfs) / 2, bc.y + nfs * 0.35), num, **FB, fontsize=nfs, color=YEL)
     x = r.x0 + pad + nb + 6
     if has_star:
@@ -231,11 +231,11 @@ def small_tag(page, text, a, b, fs=17, f=0.5, col=MAG):
 # ---------------------------------------------------------------- data
 # spots: key -> (point, arrow angle deg (direction of travel), text, badge)
 SPOTS = {
-    "1": ((526, 936), 120, "km 6 · Beethovenstraat · ~10:33", "1"),
-    "2": ((953, 1136), 180, "km 13 · Pres. Kennedylaan · ~11:29", "2"),
-    "3": ((1441, 915.5), -45, "km 32 · MOST IMPORTANT · ~14:01\nHugo de Vrieslaan", "3"),
-    "4": ((1045, 573.5), 45, "km 37 · Weesperplein · ~14:41", "4"),
-    "5": ((150, 1010), -120, "FINISH ~15:23 · HUG!\nOlympic Stadium", "5"),
+    "1": ((526, 936), 120, "km 6 · Beethovenstraat · ~10:33", "2"),
+    "2": ((953, 1136), 180, "km 13 · Pres. Kennedylaan · ~11:29", "3"),
+    "3": ((1441, 915.5), -45, "km 32 · MOST IMPORTANT · ~14:01\nHugo de Vrieslaan", "4"),
+    "4": ((1045, 573.5), 45, "km 37 · Weesperplein · ~14:41", "5"),
+    "5": ((150, 1010), -120, "START ~09:43 · FINISH ~15:23\nOlympic Stadium · HUG!", "1/6"),
 }
 ST_ = {k: tuple(v) for k, v in JD['stations'].items()}
 STATIONS = [
@@ -252,9 +252,8 @@ def annotate(page):
     track = JD["metro51"]
     ST = JD["stations"]
     # walks (each footpath drawn once), then the single metro track on top
-    for key, tag, f in (("km6-Zuid", "walk 1.1 km · 14 min", 0.5), ("RAI-km13", "walk 1.0 km · 13 min", 0.62),
-                        ("Amstel-km32", "walk 1.0 km · 13 min", 0.45), ("Zuid-finish", "walk 1.9 km · 23 min", 0.72),
-                        ("Weesperplein-km37", None, 0)):
+    for key, tag, f in (("start-km6", "", 0), ("km6-Zuid", "", 0), ("RAI-km13", "", 0),
+                        ("Amstel-km32", "", 0), ("Zuid-finish", "", 0), ("Weesperplein-km37", None, 0)):
         walk_line(page, JD["walks"][key]["path"])
     metro_line(page, track)
     idx = {k: near_idx(track, v) for k, v in ST.items()}
@@ -269,8 +268,9 @@ def annotate(page):
     tag_at(page, "Metro 51 · 2 min", seg_mid("Zuid", "RAI"), col=NAVY)
     tag_at(page, "Metro 51 · 6 min", seg_mid("Overamstel", "Spaklerweg", 0.5), col=NAVY)
     tag_at(page, "Metro 51 · 3 min", seg_mid("Amstel", "Weesperplein", 0.45), col=NAVY)
-    for key, tag, f in (("km6-Zuid", "walk 1.1 km · 14 min", 0.5), ("RAI-km13", "walk 1.0 km · 13 min", 0.62),
-                        ("Amstel-km32", "walk 1.0 km · 13 min", 0.45), ("Zuid-finish", "walk 1.9 km · 23 min", 0.72)):
+    for key, tag, f in (("start-km6", "walk 1.7 km · 21 min", 0.5), ("km6-Zuid", "walk 1.1 km · 14 min", 0.28),
+                        ("RAI-km13", "walk 1.0 km · 13 min", 0.62), ("Amstel-km32", "walk 1.0 km · 13 min", 0.45),
+                        ("Zuid-finish", "walk 1.9 km · 23 min", 0.4)):
         tag_at(page, tag, along(JD["walks"][key]["path"], f))
     # station callouts
     for name, sub, bd, tl, icons, *cl in STATIONS:
@@ -296,7 +296,7 @@ def annotate(page):
     page.insert_text(P(44, 72), "Cheer for me!", **FB, fontsize=48, color=NSY)
     page.insert_text(P(44, 104), "TCS Amsterdam Marathon · Sunday 18 Oct 2026", **FB, fontsize=27, color=WHT)
     # legend panel
-    PH = 545
+    PH = 620
     pr = pymupdf.Rect(1100, 2355 - PH, 1790, 2355)
     s = page.new_shape(); s.draw_rect(pr, radius=0.03)
     s.finish(fill=WHT, color=NAVY, width=4, fill_opacity=0.96); s.commit()
@@ -309,11 +309,12 @@ def annotate(page):
     walk_line(page, [(x0 + 250, ky), (x0 + 330, ky)])
     page.insert_text(P(x0 + 332, ky + 7), "Walk", **FB, fontsize=22, color=MAG)
     items = [
-        ("1", "km 6 Beethovenstraat", "walk 14 min to Zuid · Metro 51 to RAI (2 min) · walk 13 min", False),
-        ("2", "km 13 President Kennedylaan", "walk 13 min to RAI · Metro 51 to Amstel (6 min) · walk 13 min", False),
-        ("3", "*STAR* km 32 Hugo de Vrieslaan - MOST IMPORTANT", "walk 13 min to Amstel · Metro 51 to Weesperplein (3 min)", True),
-        ("4", "km 37 Weesperplein (at the metro exit)", "Metro 51 to Zuid (13 min, same line) · walk 23 min", False),
-        ("5", "FINISH Olympic Stadium - we hug!", "", False),
+        ("1", "START Olympic Stadium (~09:43)", "walk 21 min to Beethovenstraat (km 6)", False),
+        ("2", "km 6 Beethovenstraat", "walk 14 min to Zuid · Metro 51 to RAI (2 min) · walk 13 min", False),
+        ("3", "km 13 President Kennedylaan", "walk 13 min to RAI · Metro 51 to Amstel (6 min) · walk 13 min", False),
+        ("4", "*STAR* km 32 Hugo de Vrieslaan - MOST IMPORTANT", "walk 13 min to Amstel · Metro 51 to Weesperplein (3 min)", True),
+        ("5", "km 37 Weesperplein (at the metro exit)", "Metro 51 to Zuid (13 min, same line) · walk 23 min", False),
+        ("6", "FINISH Olympic Stadium - we hug!", "", False),
     ]
     y = pr.y0 + 128
     tx = pr.x0 + 68
@@ -342,11 +343,12 @@ def annotate(page):
 
 
 PLAN = [
-    ("1 · ~10:33", "km 6 - Beethovenstraat", "Metro or train to Zuid (be there by 10:20), then walk to km 6. Stand on the west side.", "Walk 1.1 km · 14 min"),
-    ("2 · ~11:29", "km 13 - President Kennedylaan", "Walk to Zuid, Metro 51 to RAI, walk to km 13.", "Walk 14 min + Metro 51 2 min + walk 13 min"),
-    ("3 · ~14:01", "km 32 - Hugo de Vrieslaan (MOST IMPORTANT)", "Walk to RAI, Metro 51 to Amstel, walk to km 32. Be there by 13:45.", "Walk 13 min + Metro 51 6 min + walk 13 min"),
-    ("4 · ~14:41", "km 37 - Weesperplein", "Walk to Amstel, Metro 51 to Weesperplein. The spot is right at the metro exit.", "Walk 13 min + Metro 51 3 min"),
-    ("5 · ~15:23", "FINISH - Olympic Stadium", "Metro 51 from Weesperplein to Zuid, then walk to the stadium.", "Metro 51 13 min + walk 23 min"),
+    ("1 · ~09:43", "START - Olympic Stadium", "Watch the start at the Olympic Stadium.", "-"),
+    ("2 · ~10:33", "km 6 - Beethovenstraat", "Walk from the Olympic Stadium to km 6. Stand on the west side.", "Walk 1.7 km · 21 min"),
+    ("3 · ~11:29", "km 13 - President Kennedylaan", "Walk to Zuid, Metro 51 to RAI, walk to km 13.", "Walk 14 min + Metro 51 2 min + walk 13 min"),
+    ("4 · ~14:01", "km 32 - Hugo de Vrieslaan (MOST IMPORTANT)", "Walk to RAI, Metro 51 to Amstel, walk to km 32. Be there by 13:45.", "Walk 13 min + Metro 51 6 min + walk 13 min"),
+    ("5 · ~14:41", "km 37 - Weesperplein", "Walk to Amstel, Metro 51 to Weesperplein. The spot is right at the metro exit.", "Walk 13 min + Metro 51 3 min"),
+    ("6 · ~15:23", "FINISH - Olympic Stadium", "Metro 51 from Weesperplein to Zuid, then walk to the stadium.", "Metro 51 13 min + walk 23 min"),
 ]
 
 
@@ -371,7 +373,7 @@ def plan_page(doc, size):
         wrapped = [wrap(c, fs, ends[i] - cols[i] - 10, bold=(i < 2)) for i, c in enumerate(cells)]
         h = max(len(w) for w in wrapped) * 14 + 12
         s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, y, W - 36, y + h))
-        s.finish(fill=(1, 0.97, 0.85) if k == 2 else ((0.95, 0.95, 0.95) if k % 2 else WHT), color=(0.7, 0.7, 0.7), width=0.6); s.commit()
+        s.finish(fill=(1, 0.97, 0.85) if k == 3 else ((0.95, 0.95, 0.95) if k % 2 else WHT), color=(0.7, 0.7, 0.7), width=0.6); s.commit()
         for i, w in enumerate(wrapped):
             for li, ln in enumerate(w):
                 page.insert_text(P(cols[i] + 5, y + 16 + li * 14), ln, **(FB if i < 2 else FR), fontsize=fs,
@@ -399,7 +401,7 @@ def plan_page(doc, size):
     s = page.new_shape(); s.draw_rect(pymupdf.Rect(36, 770, W - 36, 815), radius=0.15)
     s.finish(fill=NAVY, color=NAVY); s.commit()
     page.insert_textbox(pymupdf.Rect(48, 780, W - 48, 812),
-                        "No rush - we hug at the finish! Spot 3 (km 32) is the most important one.",
+                        "No rush - we hug at the finish! Spot 4 (km 32) is the most important one.",
                         **FB, fontsize=14, color=WHT, align=1)
     print("plan page content bottom", yy)
 
